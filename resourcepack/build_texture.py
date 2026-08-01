@@ -1,6 +1,12 @@
 from PIL import Image, ImageDraw, ImageFont
 import random
 
+# Minecraft calcule les UV de la texture generique de conteneur sur une toile
+# de 256x256 (convention historique des textures gui/container/*), meme si le
+# contenu reellement dessine ne remplit que 176x222 en haut a gauche. Sans ce
+# padding, le rendu en jeu n'echantillonne qu'une fraction de l'image et
+# l'affiche etiree sur toute la fenetre (effet "trop zoome").
+CANVAS = 256
 W, H = 176, 222
 
 WOOD = (90, 58, 28, 255)
@@ -78,7 +84,9 @@ for col in range(COLS):
 divider_y = (CONTENT_Y0 + CONTENT_ROWS * 18 + PLAYER_INV_Y0) // 2
 draw.line([(BORDER + 4, divider_y), (W - BORDER - 5, divider_y)], fill=INK)
 
-img.convert("RGB").save("assets/minecraft/textures/gui/container/generic_54.png")
+canvas = Image.new("RGBA", (CANVAS, CANVAS), (0, 0, 0, 0))
+canvas.alpha_composite(img, (0, 0))
+canvas.save("assets/minecraft/textures/gui/container/generic_54.png")
 
 # icone du resource pack
 icon = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
