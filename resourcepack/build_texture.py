@@ -46,7 +46,7 @@ for _ in range(16):
 draw = ImageDraw.Draw(img)
 
 # cadre bois
-BORDER = 6
+BORDER = 4
 draw.rectangle([0, 0, W - 1, BORDER - 1], fill=WOOD)
 draw.rectangle([0, H - BORDER, W - 1, H - 1], fill=WOOD)
 draw.rectangle([0, 0, BORDER - 1, H - 1], fill=WOOD)
@@ -63,12 +63,18 @@ def draw_slot(x, y):
     draw.line([(x, y + 17), (x + 17, y + 17)], fill=HILITE)
 
 
+# Coordonnees alignees sur ChestMenu (vanilla) : addSlot(x, y) = (8 + col*18, 18 + row*18)
+# pour les rangees de contenu. Le bloc "inventaire joueur" est toujours
+# echantillonne a v=126 dans la texture source, quel que soit le nombre de
+# rangees du conteneur (126 = 18 + 6*18, soit exactement la fin du bloc
+# contenu pour un conteneur a 6 rangees) : les deux blocs sont donc adjacents
+# sans marge dans le fichier source.
 SLOT_X0 = 8
-CONTENT_Y0 = 17
+CONTENT_Y0 = 18
 COLS = 9
 CONTENT_ROWS = 6
-PLAYER_INV_Y0 = 143
-HOTBAR_Y0 = 197
+PLAYER_INV_Y0 = 144
+HOTBAR_Y0 = 198
 
 for row in range(CONTENT_ROWS):
     for col in range(COLS):
@@ -80,9 +86,6 @@ for row in range(3):
 
 for col in range(COLS):
     draw_slot(SLOT_X0 + col * 18, HOTBAR_Y0)
-
-divider_y = (CONTENT_Y0 + CONTENT_ROWS * 18 + PLAYER_INV_Y0) // 2
-draw.line([(BORDER + 4, divider_y), (W - BORDER - 5, divider_y)], fill=INK)
 
 canvas = Image.new("RGBA", (CANVAS, CANVAS), (0, 0, 0, 0))
 canvas.alpha_composite(img, (0, 0))
