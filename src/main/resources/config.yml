@@ -6,6 +6,9 @@ price-update-interval: 60
 # Sensibilite du marche : plus la valeur est haute, plus les prix bougent vite
 market-sensitivity: 0.02
 
+# Sensibilite de la correlation entre items d'une meme categorie (effet plus subtil que market-sensitivity)
+category-sensitivity: 0.01
+
 # Marge minimale et maximale par rapport au prix de base (evite les prix a 0 ou infinis)
 min-price-multiplier: 0.2
 max-price-multiplier: 5.0
@@ -13,33 +16,74 @@ max-price-multiplier: 5.0
 # Nombre de points d'historique de prix conserves par item (pour /market graphique)
 price-history-length: 50
 
-# Items disponibles sur le marche au demarrage : materiau, prix de base, stock initial, nom affiche
+# Evenements de marche aleatoires (krachs / ruees) qui secouent une categorie ou tout le marche
+events:
+  enabled: true
+  # Chance (0.0 a 1.0) de declencher un evenement a chaque recalcul de prix, si aucun n'est deja actif
+  check-chance: 0.15
+  # Duree d'un evenement, en nombre de cycles de recalcul de prix
+  duration-cycles: 3
+  # Choc de prix instantane applique au declenchement (multiplicateur)
+  crash-shock: 0.75
+  boom-shock: 1.30
+  # Multiplicateur de volatilite applique aux items de la categorie touchee pendant l'evenement
+  volatility-multiplier: 2.0
+
+# Items disponibles sur le marche au demarrage : materiau, categorie, prix de base, stock initial, nom affiche
+# Categories possibles: RAW_MATERIALS, ORES, CONSUMABLES, MOB_DROPS, RARE, OTHER
 items:
-  DIAMOND:
-    display-name: "Diamant"
-    base-price: 100.0
-    initial-stock: 500
-  EMERALD:
-    display-name: "Émeraude"
-    base-price: 40.0
-    initial-stock: 800
-  NETHERITE_INGOT:
-    display-name: "Lingot de Netherite"
-    base-price: 500.0
-    initial-stock: 50
+  OAK_LOG:
+    display-name: "Bois de Chêne"
+    category: RAW_MATERIALS
+    base-price: 3.0
+    initial-stock: 4000
+  COBBLESTONE:
+    display-name: "Pierre"
+    category: RAW_MATERIALS
+    base-price: 1.0
+    initial-stock: 8000
   IRON_INGOT:
     display-name: "Lingot de Fer"
+    category: ORES
     base-price: 8.0
     initial-stock: 2000
   GOLD_INGOT:
     display-name: "Lingot d'Or"
+    category: ORES
     base-price: 15.0
     initial-stock: 1200
+  DIAMOND:
+    display-name: "Diamant"
+    category: RARE
+    base-price: 100.0
+    initial-stock: 500
+  EMERALD:
+    display-name: "Émeraude"
+    category: RARE
+    base-price: 40.0
+    initial-stock: 800
+  NETHERITE_INGOT:
+    display-name: "Lingot de Netherite"
+    category: RARE
+    base-price: 500.0
+    initial-stock: 50
   WHEAT:
     display-name: "Blé"
+    category: CONSUMABLES
     base-price: 2.0
     initial-stock: 5000
+  COOKED_BEEF:
+    display-name: "Steak Cuit"
+    category: CONSUMABLES
+    base-price: 5.0
+    initial-stock: 2000
   ROTTEN_FLESH:
     display-name: "Chair Pourrie"
+    category: MOB_DROPS
     base-price: 0.5
     initial-stock: 5000
+  ENDER_PEARL:
+    display-name: "Perle d'Ender"
+    category: MOB_DROPS
+    base-price: 25.0
+    initial-stock: 300

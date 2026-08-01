@@ -25,6 +25,7 @@ public class MarketGUI {
             if (meta != null) {
                 meta.setDisplayName("\u00a7e" + item.getDisplayName() + " " + item.getTrendArrow());
                 ArrayList<Object> lore = new ArrayList<Object>();
+                lore.add("\u00a77Cat\u00e9gorie: \u00a7f" + item.getCategory().getDisplayName());
                 lore.add("\u00a77Prix d'achat: \u00a7a" + item.getBuyPrice());
                 lore.add("\u00a77Prix de vente: \u00a7c" + item.getSellPrice());
                 lore.add("\u00a77Stock disponible: \u00a7f" + item.getStock());
