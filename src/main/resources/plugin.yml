@@ -1,0 +1,31 @@
+name: MarketEconomy
+version: '1.0.0'
+main: com.antonin.marketeconomy.MarketEconomyPlugin
+api-version: '1.21'
+author: Antonin
+description: Economie de marche dynamique (offre/demande) pour serveurs Minecraft
+softdepend: [Vault]
+
+commands:
+  market:
+    description: Ouvre l'interface du marche
+    usage: /market
+    aliases: [marche, bourse]
+  sell:
+    description: Vend l'item tenu en main sur le marche
+    usage: /sell <quantite>
+  buy:
+    description: Achete un item sur le marche
+    usage: /buy <item> <quantite>
+  marketadmin:
+    description: Commandes admin du marche (reset prix, ajout item)
+    usage: /marketadmin <reset|additem|setprice> [args]
+    permission: marketeconomy.admin
+
+permissions:
+  marketeconomy.use:
+    description: Autorise l'utilisation du marche
+    default: true
+  marketeconomy.admin:
+    description: Autorise l'administration du marche
+    default: op
