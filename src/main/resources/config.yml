@@ -20,7 +20,7 @@ price-history-length: 50
 events:
   enabled: true
   # Chance (0.0 a 1.0) de declencher un evenement a chaque recalcul de prix, si aucun n'est deja actif
-  check-chance: 0.15
+  check-chance: 0.05
   # Duree d'un evenement, en nombre de cycles de recalcul de prix
   duration-cycles: 3
   # Choc de prix instantane applique au declenchement (multiplicateur)

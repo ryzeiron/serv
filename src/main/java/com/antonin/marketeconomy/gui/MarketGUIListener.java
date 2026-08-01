@@ -90,7 +90,7 @@ public class MarketGUIListener implements Listener {
             return;
         }
         this.economyHook.withdraw(player, price);
-        item.registerBuy(1L);
+        this.marketManager.recordPurchase(item, 1L);
         player.getInventory().addItem(new ItemStack(item.getMaterial(), 1));
         player.sendMessage("§aAcheté 1x " + item.getDisplayName() + " pour " + this.economyHook.format(price));
     }
@@ -103,7 +103,7 @@ public class MarketGUIListener implements Listener {
         }
         double price = item.getSellPrice();
         player.getInventory().removeItem(toRemove);
-        item.registerSell(1L);
+        this.marketManager.recordSale(item, 1L);
         this.economyHook.deposit(player, price);
         player.sendMessage("§aVendu 1x " + item.getDisplayName() + " pour " + this.economyHook.format(price));
     }

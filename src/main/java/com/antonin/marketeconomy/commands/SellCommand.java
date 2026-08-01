@@ -50,7 +50,7 @@ implements CommandExecutor {
         double unitPrice = item.getSellPrice();
         double total = (double)Math.round(unitPrice * (double)amount * 100.0) / 100.0;
         hand.setAmount(hand.getAmount() - amount);
-        item.registerSell(amount);
+        this.plugin.getMarketManager().recordSale(item, amount);
         this.plugin.getEconomyHook().deposit(player, total);
         player.sendMessage("\u00a7aVendu " + amount + "x " + item.getDisplayName() + " pour " + this.plugin.getEconomyHook().format(total));
         return true;

@@ -30,6 +30,11 @@ public class MarketManager {
     private final Random random = new Random();
     private MarketEvent activeEvent;
 
+    private long totalBought = 0L;
+    private long totalSold = 0L;
+    private double previousIndexValue = 1.0;
+    private double lastIndexValue = 1.0;
+
     public MarketManager(MarketEconomyPlugin plugin) {
         FileConfiguration config = plugin.getConfig();
         this.sensitivity = config.getDouble("market-sensitivity", 0.02);
@@ -39,7 +44,7 @@ public class MarketManager {
         int historyLength = config.getInt("price-history-length", 50);
 
         this.eventsEnabled = config.getBoolean("events.enabled", true);
-        this.eventCheckChance = config.getDouble("events.check-chance", 0.15);
+        this.eventCheckChance = config.getDouble("events.check-chance", 0.05);
         this.eventDurationCycles = Math.max(1, config.getInt("events.duration-cycles", 3));
         this.crashShock = config.getDouble("events.crash-shock", 0.75);
         this.boomShock = config.getDouble("events.boom-shock", 1.30);
@@ -59,6 +64,8 @@ public class MarketManager {
                 this.items.put(material, new MarketItem(material, displayName, category, basePrice, initialStock, historyLength));
             }
         }
+        this.lastIndexValue = this.computeIndex();
+        this.previousIndexValue = this.lastIndexValue;
     }
 
     private static String defaultDisplayName(Material material) {
@@ -82,6 +89,53 @@ public class MarketManager {
         return this.activeEvent;
     }
 
+    public void recordPurchase(MarketItem item, long amount) {
+        item.registerBuy(amount);
+        this.totalBought += amount;
+    }
+
+    public void recordSale(MarketItem item, long amount) {
+        item.registerSell(amount);
+        this.totalSold += amount;
+    }
+
+    public long getTotalBought() {
+        return this.totalBought;
+    }
+
+    public long getTotalSold() {
+        return this.totalSold;
+    }
+
+    public double getMarketIndexChangePercent() {
+        if (this.previousIndexValue == 0.0) {
+            return 0.0;
+        }
+        return (this.lastIndexValue - this.previousIndexValue) / this.previousIndexValue * 100.0;
+    }
+
+    public String getMarketTrendArrow() {
+        double change = this.getMarketIndexChangePercent();
+        if (change > 0.01) {
+            return "↑";
+        }
+        if (change < -0.01) {
+            return "↓";
+        }
+        return "→";
+    }
+
+    private double computeIndex() {
+        if (this.items.isEmpty()) {
+            return 1.0;
+        }
+        double sum = 0.0;
+        for (MarketItem item : this.items.values()) {
+            sum += item.getCurrentPrice() / item.getBasePrice();
+        }
+        return sum / this.items.size();
+    }
+
     public void recalculateAll() {
         Map<MarketCategory, long[]> categoryTotals = new EnumMap<>(MarketCategory.class);
         for (MarketItem item : this.items.values()) {
@@ -103,6 +157,9 @@ public class MarketManager {
         }
 
         this.tickEvent();
+
+        this.previousIndexValue = this.lastIndexValue;
+        this.lastIndexValue = this.computeIndex();
     }
 
     private void tickEvent() {
