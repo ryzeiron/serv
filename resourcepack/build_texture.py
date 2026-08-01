@@ -79,7 +79,9 @@ CONTENT_Y0 = 18
 COLS = 9
 CONTENT_ROWS = 6
 PLAYER_INV_Y0 = 140
-HOTBAR_Y0 = 194
+# vanilla laisse un espace de 4px de plus entre les 3 rangees d'inventaire et
+# la hotbar (invY + 58, pas +54) pour bien separer visuellement les deux
+HOTBAR_Y0 = PLAYER_INV_Y0 + 58
 
 for row in range(CONTENT_ROWS):
     for col in range(COLS):
