@@ -56,11 +56,16 @@ draw.rectangle([BORDER, H - BORDER - 1, W - BORDER - 1, H - BORDER], fill=WOOD_D
 
 
 def draw_slot(x, y):
-    draw.rectangle([x, y, x + 17, y + 17], fill=SLOT_FILL)
-    draw.line([(x, y), (x + 17, y)], fill=INK)
-    draw.line([(x, y), (x, y + 17)], fill=INK)
-    draw.line([(x + 17, y), (x + 17, y + 17)], fill=HILITE)
-    draw.line([(x, y + 17), (x + 17, y + 17)], fill=HILITE)
+    # Le jeu dessine l'icone de l'item calee (sans marge) sur (x, y) en 16x16 :
+    # la case visuelle doit donc etre centree autour de ce point, pas partir
+    # de (x, y) comme origine haut-gauche, sinon l'icone parait collee en
+    # haut a gauche de sa case.
+    x0, y0, x1, y1 = x - 1, y - 1, x + 16, y + 16
+    draw.rectangle([x0, y0, x1, y1], fill=SLOT_FILL)
+    draw.line([(x0, y0), (x1, y0)], fill=INK)
+    draw.line([(x0, y0), (x0, y1)], fill=INK)
+    draw.line([(x1, y0), (x1, y1)], fill=HILITE)
+    draw.line([(x0, y1), (x1, y1)], fill=HILITE)
 
 
 # Coordonnees alignees sur ChestMenu (vanilla) : addSlot(x, y) = (8 + col*18, 18 + row*18)
