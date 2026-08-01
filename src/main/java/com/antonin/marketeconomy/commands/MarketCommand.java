@@ -25,7 +25,7 @@ implements CommandExecutor {
             player.sendMessage("\u00a7cTu n'as pas la permission d'utiliser le marche.");
             return true;
         }
-        MarketGUI.openMainMenu(player, this.plugin.getMarketManager());
+        MarketGUI.openMainMenu(player, this.plugin.getMarketManager(), this.plugin.getEconomyHook());
         return true;
     }
 }

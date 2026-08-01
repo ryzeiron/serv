@@ -3,6 +3,7 @@ package com.antonin.marketeconomy.gui;
 import com.antonin.marketeconomy.MarketManager;
 import com.antonin.marketeconomy.model.MarketCategory;
 import com.antonin.marketeconomy.model.MarketItem;
+import com.antonin.marketeconomy.storage.EconomyHook;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -37,7 +38,7 @@ public class MarketGUI {
         CATEGORY_ICONS.put(MarketCategory.OTHER, Material.CHEST);
     }
 
-    public static Inventory buildMainMenu(MarketManager manager) {
+    public static Inventory buildMainMenu(MarketManager manager, EconomyHook economyHook) {
         Map<MarketCategory, List<MarketItem>> byCategory = groupByCategory(manager);
         List<MarketCategory> categories = new ArrayList<>(byCategory.keySet());
 
@@ -69,8 +70,8 @@ public class MarketGUI {
         }
 
         inv.setItem(TREND_SLOT, buildTrendItem(manager));
-        inv.setItem(BOUGHT_TOTAL_SLOT, buildStatItem(Material.GOLD_INGOT, "§6Total acheté", manager.getTotalBought()));
-        inv.setItem(SOLD_TOTAL_SLOT, buildStatItem(Material.EMERALD, "§aTotal vendu", manager.getTotalSold()));
+        inv.setItem(BOUGHT_TOTAL_SLOT, buildStatItem(Material.GOLD_INGOT, "§6Total acheté", manager.getTotalSpent(), manager.getTotalBought(), economyHook));
+        inv.setItem(SOLD_TOTAL_SLOT, buildStatItem(Material.EMERALD, "§aTotal vendu", manager.getTotalEarned(), manager.getTotalSold(), economyHook));
 
         return inv;
     }
@@ -155,13 +156,14 @@ public class MarketGUI {
         return stack;
     }
 
-    private static ItemStack buildStatItem(Material material, String name, long total) {
+    private static ItemStack buildStatItem(Material material, String name, double totalMoney, long totalItems, EconomyHook economyHook) {
         ItemStack stack = new ItemStack(material);
         ItemMeta meta = stack.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(name);
+            String amount = economyHook.isEnabled() ? economyHook.format(totalMoney) : String.format("%.2f$", totalMoney);
+            meta.setDisplayName(name + " §f" + amount);
             List<String> lore = new ArrayList<>();
-            lore.add("§7" + total + " item(s) depuis le démarrage");
+            lore.add("§7" + totalItems + " item(s) depuis le démarrage");
             meta.setLore(lore);
             stack.setItemMeta(meta);
         }
@@ -176,8 +178,8 @@ public class MarketGUI {
         return byCategory;
     }
 
-    public static void openMainMenu(Player player, MarketManager manager) {
-        player.openInventory(buildMainMenu(manager));
+    public static void openMainMenu(Player player, MarketManager manager, EconomyHook economyHook) {
+        player.openInventory(buildMainMenu(manager, economyHook));
     }
 
     public static void openCategoryMenu(Player player, MarketManager manager, MarketCategory category) {

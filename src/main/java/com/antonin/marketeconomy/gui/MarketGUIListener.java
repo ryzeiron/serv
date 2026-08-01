@@ -55,7 +55,7 @@ public class MarketGUIListener implements Listener {
         }
 
         if (holder.isBackButton(slot)) {
-            MarketGUI.openMainMenu(player, this.marketManager);
+            MarketGUI.openMainMenu(player, this.marketManager, this.economyHook);
             return;
         }
 
@@ -90,7 +90,7 @@ public class MarketGUIListener implements Listener {
             return;
         }
         this.economyHook.withdraw(player, price);
-        this.marketManager.recordPurchase(item, 1L);
+        this.marketManager.recordPurchase(item, 1L, price);
         player.getInventory().addItem(new ItemStack(item.getMaterial(), 1));
         player.sendMessage("§aAcheté 1x " + item.getDisplayName() + " pour " + this.economyHook.format(price));
     }
@@ -103,7 +103,7 @@ public class MarketGUIListener implements Listener {
         }
         double price = item.getSellPrice();
         player.getInventory().removeItem(toRemove);
-        this.marketManager.recordSale(item, 1L);
+        this.marketManager.recordSale(item, 1L, price);
         this.economyHook.deposit(player, price);
         player.sendMessage("§aVendu 1x " + item.getDisplayName() + " pour " + this.economyHook.format(price));
     }

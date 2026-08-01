@@ -32,6 +32,8 @@ public class MarketManager {
 
     private long totalBought = 0L;
     private long totalSold = 0L;
+    private double totalSpent = 0.0;
+    private double totalEarned = 0.0;
     private double previousIndexValue = 1.0;
     private double lastIndexValue = 1.0;
 
@@ -89,14 +91,16 @@ public class MarketManager {
         return this.activeEvent;
     }
 
-    public void recordPurchase(MarketItem item, long amount) {
+    public void recordPurchase(MarketItem item, long amount, double totalPrice) {
         item.registerBuy(amount);
         this.totalBought += amount;
+        this.totalSpent += totalPrice;
     }
 
-    public void recordSale(MarketItem item, long amount) {
+    public void recordSale(MarketItem item, long amount, double totalPrice) {
         item.registerSell(amount);
         this.totalSold += amount;
+        this.totalEarned += totalPrice;
     }
 
     public long getTotalBought() {
@@ -105,6 +109,14 @@ public class MarketManager {
 
     public long getTotalSold() {
         return this.totalSold;
+    }
+
+    public double getTotalSpent() {
+        return this.totalSpent;
+    }
+
+    public double getTotalEarned() {
+        return this.totalEarned;
     }
 
     public double getMarketIndexChangePercent() {

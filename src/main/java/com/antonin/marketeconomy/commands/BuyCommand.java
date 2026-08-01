@@ -62,7 +62,7 @@ implements CommandExecutor {
             return true;
         }
         this.plugin.getEconomyHook().withdraw(player, total);
-        this.plugin.getMarketManager().recordPurchase(item, amount);
+        this.plugin.getMarketManager().recordPurchase(item, amount, total);
         player.getInventory().addItem(new ItemStack[]{new ItemStack(material, amount)});
         player.sendMessage("\u00a7aAchete " + amount + "x " + item.getDisplayName() + " pour " + this.plugin.getEconomyHook().format(total));
         return true;
