@@ -78,8 +78,8 @@ SLOT_X0 = 8
 CONTENT_Y0 = 18
 COLS = 9
 CONTENT_ROWS = 6
-PLAYER_INV_Y0 = 144
-HOTBAR_Y0 = 198
+PLAYER_INV_Y0 = 140
+HOTBAR_Y0 = 194
 
 for row in range(CONTENT_ROWS):
     for col in range(COLS):
