@@ -5,10 +5,8 @@ import com.antonin.marketeconomy.model.MarketCategory;
 import com.antonin.marketeconomy.model.MarketEvent;
 import com.antonin.marketeconomy.model.MarketItem;
 import com.antonin.marketeconomy.storage.EconomyHook;
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -18,7 +16,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
@@ -66,7 +63,7 @@ public class MarketManager {
     private final double futuresMaxStake;
     private final int futuresMinMinutes;
     private final int futuresMaxMinutes;
-    private final List<FuturesContract> activeContracts = new ArrayList<>();
+    private final Map<UUID, FuturesContract> contracts = new HashMap<>();
 
     public MarketManager(MarketEconomyPlugin plugin, EconomyHook economyHook) {
         this.economyHook = economyHook;
@@ -288,51 +285,38 @@ public class MarketManager {
         return null;
     }
 
-    public void openContract(Player player, MarketItem item, FuturesContract.Type type, double stake, int minutes) {
+    public FuturesContract openContract(Player player, MarketItem item, FuturesContract.Type type, double stake, int minutes) {
         long maturity = System.currentTimeMillis() + minutes * 60_000L;
-        this.activeContracts.add(new FuturesContract(player.getUniqueId(), item.getMaterial(), type, stake, item.getCurrentPrice(), maturity));
+        UUID id = UUID.randomUUID();
+        FuturesContract contract = new FuturesContract(id, player.getUniqueId(), item.getMaterial(), type, stake, item.getCurrentPrice(), maturity);
+        this.contracts.put(id, contract);
+        return contract;
     }
 
-    public List<FuturesContract> getContracts(UUID playerUuid) {
-        List<FuturesContract> result = new ArrayList<>();
-        for (FuturesContract contract : this.activeContracts) {
-            if (contract.getPlayer().equals(playerUuid)) {
-                result.add(contract);
-            }
-        }
-        return result;
+    public FuturesContract getContract(UUID contractId) {
+        return this.contracts.get(contractId);
     }
 
-    private void settleMaturedContracts() {
-        if (this.activeContracts.isEmpty()) {
+    // Retire le contrat et rend le paiement fige (0 si le contrat n'existe pas/plus)
+    public double redeemContract(UUID contractId) {
+        FuturesContract contract = this.contracts.remove(contractId);
+        return contract != null ? contract.getLockedPayout() : 0.0;
+    }
+
+    // Fige le paiement au prix du marche au moment de l'echeance, mais ne paie personne :
+    // le contrat est un instrument au porteur, seul l'encaissement (clic droit sur l'item) paie
+    private void tickContracts() {
+        if (this.contracts.isEmpty()) {
             return;
         }
         long now = System.currentTimeMillis();
-        Iterator<FuturesContract> iterator = this.activeContracts.iterator();
-        while (iterator.hasNext()) {
-            FuturesContract contract = iterator.next();
-            if (!contract.isMatured(now)) {
+        for (FuturesContract contract : this.contracts.values()) {
+            if (contract.isSettled() || !contract.isMatured(now)) {
                 continue;
             }
             MarketItem item = this.items.get(contract.getMaterial());
             double priceAtMaturity = item != null ? item.getCurrentPrice() : contract.getPriceAtCreation();
-            double payout = contract.computePayout(priceAtMaturity);
-            if (this.economyHook != null && this.economyHook.isEnabled()) {
-                OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(contract.getPlayer());
-                this.economyHook.deposit(offlinePlayer, payout);
-            }
-            Player online = Bukkit.getPlayer(contract.getPlayer());
-            if (online != null) {
-                double profit = payout - contract.getStake();
-                String itemName = item != null ? item.getDisplayName() : contract.getMaterial().name();
-                String amount = this.economyHook != null && this.economyHook.isEnabled()
-                        ? this.economyHook.format(payout) : String.format("%.2f", payout);
-                String profitColor = profit >= 0 ? "§a+" : "§c";
-                online.sendMessage("§6[Contrat] §eTon contrat " + (contract.getType() == FuturesContract.Type.LONG ? "LONG" : "SHORT")
-                        + " sur " + itemName + " a mûri : règlement " + amount
-                        + " (" + profitColor + String.format("%.2f", profit) + "§e)");
-            }
-            iterator.remove();
+            contract.settle(priceAtMaturity);
         }
     }
 
@@ -370,7 +354,7 @@ public class MarketManager {
 
         this.tickEvent();
         this.generateMoveHeadline(biggestMoveItem, biggestMoveChangePercent);
-        this.settleMaturedContracts();
+        this.tickContracts();
         this.playerActivity.clear();
 
         this.previousIndexValue = this.lastIndexValue;

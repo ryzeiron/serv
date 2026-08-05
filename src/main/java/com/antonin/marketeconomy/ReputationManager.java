@@ -6,9 +6,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 public class ReputationManager {
     private final MarketEconomyPlugin plugin;
@@ -24,6 +28,10 @@ public class ReputationManager {
     private final double trustedDiscount;
     private final double likedDiscount;
     private final double wearyMarkup;
+
+    // Paliers de prestige (nombre d'echanges cumules) et titres associes, du plus bas au plus haut
+    private static final long[] TITLE_THRESHOLDS = {10L, 50L, 200L, 1000L};
+    private static final String[] TITLES = {"§7Négociant", "§aMarchand", "§e§lGrand Marchand", "§6§lMagnat du Marché"};
 
     public ReputationManager(MarketEconomyPlugin plugin) {
         this.plugin = plugin;
@@ -47,11 +55,55 @@ public class ReputationManager {
         return this.reputations.computeIfAbsent(uuid, u -> new PlayerReputation());
     }
 
-    public void registerTrade(UUID uuid, double amountSpent) {
-        PlayerReputation reputation = this.get(uuid);
+    public void registerTrade(Player player, double amountSpent) {
+        PlayerReputation reputation = this.get(player.getUniqueId());
+        long before = reputation.getTotalTrades();
         reputation.recordSpend(amountSpent);
         reputation.addTrust(this.tradeGain);
         reputation.touchInteraction();
+        long after = reputation.getTotalTrades();
+
+        String titleBefore = this.getMerchantTitle(before);
+        String titleAfter = this.getMerchantTitle(after);
+        if (titleAfter != null) {
+            this.applyTitle(player, titleAfter);
+        }
+        if (titleAfter != null && !titleAfter.equals(titleBefore)) {
+            Bukkit.broadcastMessage("§6[Marché] §e" + player.getName() + " devient " + titleAfter + " §e!");
+        }
+    }
+
+    // Renvoie le titre le plus haut atteint, ou null si aucun palier n'est franchi
+    public String getMerchantTitle(long totalTrades) {
+        String title = null;
+        for (int i = 0; i < TITLE_THRESHOLDS.length; i++) {
+            if (totalTrades >= TITLE_THRESHOLDS[i]) {
+                title = TITLES[i];
+            }
+        }
+        return title;
+    }
+
+    // Applique le titre en prefixe d'equipe scoreboard (visible au-dessus de la tete et dans le tab)
+    public void applyTitle(Player player, String title) {
+        if (title == null) {
+            return;
+        }
+        Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
+        String teamName = ("mt" + player.getUniqueId().toString().replace("-", "")).substring(0, 16);
+        Team team = board.getTeam(teamName);
+        if (team == null) {
+            team = board.registerNewTeam(teamName);
+        }
+        if (!team.hasEntry(player.getName())) {
+            team.addEntry(player.getName());
+        }
+        team.setPrefix(title + " ");
+    }
+
+    // A rappeler a la connexion pour reappliquer le titre deja acquis
+    public void refreshTitle(Player player) {
+        this.applyTitle(player, this.getMerchantTitle(this.get(player.getUniqueId()).getTotalTrades()));
     }
 
     public void penalizeVillagerKill(UUID uuid) {

@@ -25,6 +25,10 @@ commands:
     description: Contrats a terme sur le marche (parier sur la tendance)
     usage: /futures <long|short|list> [item] [montant] [minutes]
     aliases: [contrat]
+  marketitem:
+    description: Obtenir des items speciaux du marche (boussole, graine speculative)
+    usage: /marketitem <boussole|graine> [montant] [minutes]
+    permission: marketeconomy.use
   marketadmin:
     description: Commandes admin du marche (reset prix, ajout item)
     usage: /marketadmin <reset|additem|setprice> [args]

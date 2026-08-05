@@ -2,13 +2,16 @@ package com.antonin.marketeconomy.commands;
 
 import com.antonin.marketeconomy.MarketEconomyPlugin;
 import com.antonin.marketeconomy.MarketManager;
+import com.antonin.marketeconomy.items.FuturesItem;
 import com.antonin.marketeconomy.model.FuturesContract;
 import com.antonin.marketeconomy.model.MarketItem;
+import java.util.UUID;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 public class FuturesCommand implements CommandExecutor {
     private final MarketEconomyPlugin plugin;
@@ -84,29 +87,46 @@ public class FuturesCommand implements CommandExecutor {
 
         this.plugin.getEconomyHook().withdraw(player, stake);
         FuturesContract.Type type = args[0].equalsIgnoreCase("long") ? FuturesContract.Type.LONG : FuturesContract.Type.SHORT;
-        manager.openContract(player, item, type, stake, minutes);
+        FuturesContract contract = manager.openContract(player, item, type, stake, minutes);
+
+        ItemStack contractItem = FuturesItem.createContract(this.plugin, contract, item);
+        player.getInventory().addItem(contractItem);
 
         player.sendMessage("§6[Contrat] §eContrat " + (type == FuturesContract.Type.LONG ? "LONG" : "SHORT")
                 + " ouvert sur " + item.getDisplayName() + " : mise " + this.plugin.getEconomyHook().format(stake)
-                + ", prix de référence " + item.getCurrentPrice() + ", échéance dans " + minutes + " min.");
+                + ", prix de référence " + item.getCurrentPrice() + ", échéance dans " + minutes + " min. "
+                + "Le contrat physique t'a été donné — échangeable avec d'autres joueurs avant échéance.");
         return true;
     }
 
     private void listContracts(Player player) {
         MarketManager manager = this.plugin.getMarketManager();
-        var contracts = manager.getContracts(player.getUniqueId());
-        if (contracts.isEmpty()) {
-            player.sendMessage("§7Tu n'as aucun contrat à terme actif.");
-            return;
-        }
-        player.sendMessage("§6=== Tes contrats à terme ===");
+        int found = 0;
+        player.sendMessage("§6=== Contrats dans ton inventaire ===");
         long now = System.currentTimeMillis();
-        for (FuturesContract contract : contracts) {
-            long remaining = Math.max(0L, (contract.getMaturityAtMillis() - now) / 1000L);
+        for (ItemStack stack : player.getInventory().getContents()) {
+            UUID contractId = FuturesItem.readContractId(this.plugin, stack);
+            if (contractId == null) {
+                continue;
+            }
+            FuturesContract contract = manager.getContract(contractId);
+            if (contract == null) {
+                continue;
+            }
+            found++;
+            String status;
+            if (contract.isSettled()) {
+                status = "§aprêt à encaisser (" + this.plugin.getEconomyHook().format(contract.getLockedPayout()) + ")";
+            } else {
+                long remaining = Math.max(0L, (contract.getMaturityAtMillis() - now) / 1000L);
+                status = "§7échéance dans " + remaining + "s";
+            }
             player.sendMessage("§7- §e" + (contract.getType() == FuturesContract.Type.LONG ? "LONG" : "SHORT")
-                    + " §7" + contract.getMaterial().name()
-                    + " | mise " + this.plugin.getEconomyHook().format(contract.getStake())
-                    + " | échéance dans " + remaining + "s");
+                    + " §7" + contract.getMaterial().name() + " | mise " + this.plugin.getEconomyHook().format(contract.getStake())
+                    + " | " + status);
+        }
+        if (found == 0) {
+            player.sendMessage("§7Aucun contrat trouvé dans ton inventaire.");
         }
     }
 

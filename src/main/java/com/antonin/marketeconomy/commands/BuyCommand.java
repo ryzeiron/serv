@@ -67,6 +67,7 @@ implements CommandExecutor {
         }
         this.plugin.getEconomyHook().withdraw(player, total);
         this.plugin.getMarketManager().recordPurchase(player, item, amount, total);
+        this.plugin.getReputationManager().registerTrade(player, total);
         player.getInventory().addItem(new ItemStack[]{new ItemStack(material, amount)});
         player.sendMessage("\u00a7aAchete " + amount + "x " + item.getDisplayName() + " pour " + this.plugin.getEconomyHook().format(total));
         return true;

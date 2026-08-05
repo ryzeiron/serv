@@ -2,6 +2,7 @@ package com.antonin.marketeconomy.gui;
 
 import com.antonin.marketeconomy.MarketEconomyPlugin;
 import com.antonin.marketeconomy.MarketManager;
+import com.antonin.marketeconomy.ReputationManager;
 import com.antonin.marketeconomy.model.MarketCategory;
 import com.antonin.marketeconomy.model.MarketItem;
 import com.antonin.marketeconomy.storage.EconomyHook;
@@ -19,10 +20,12 @@ import org.bukkit.inventory.ItemStack;
 public class MarketGUIListener implements Listener {
     private final MarketManager marketManager;
     private final EconomyHook economyHook;
+    private final ReputationManager reputationManager;
 
     public MarketGUIListener(MarketEconomyPlugin plugin) {
         this.marketManager = plugin.getMarketManager();
         this.economyHook = plugin.getEconomyHook();
+        this.reputationManager = plugin.getReputationManager();
     }
 
     @EventHandler
@@ -95,6 +98,7 @@ public class MarketGUIListener implements Listener {
         }
         this.economyHook.withdraw(player, price);
         this.marketManager.recordPurchase(player, item, 1L, price);
+        this.reputationManager.registerTrade(player, price);
         player.getInventory().addItem(new ItemStack(item.getMaterial(), 1));
         player.sendMessage("§aAcheté 1x " + item.getDisplayName() + " pour " + this.economyHook.format(price));
     }
@@ -108,6 +112,7 @@ public class MarketGUIListener implements Listener {
         double price = item.getSellPrice();
         player.getInventory().removeItem(toRemove);
         this.marketManager.recordSale(player, item, 1L, price);
+        this.reputationManager.registerTrade(player, price);
         this.economyHook.deposit(player, price);
         player.sendMessage("§aVendu 1x " + item.getDisplayName() + " pour " + this.economyHook.format(price));
     }

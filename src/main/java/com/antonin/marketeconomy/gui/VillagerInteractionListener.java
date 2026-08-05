@@ -124,7 +124,7 @@ public class VillagerInteractionListener implements Listener {
         }
         this.economyHook.withdraw(player, price);
         this.marketManager.recordPurchase(player, item, 1L, price);
-        this.reputationManager.registerTrade(uuid, price);
+        this.reputationManager.registerTrade(player, price);
         player.getInventory().addItem(new ItemStack(item.getMaterial(), 1));
         player.sendMessage("§aAcheté 1x " + item.getDisplayName() + " pour " + this.economyHook.format(price));
     }
@@ -138,7 +138,7 @@ public class VillagerInteractionListener implements Listener {
         double price = round2(item.getSellPrice() * this.reputationManager.getSellMultiplier(uuid));
         player.getInventory().removeItem(toRemove);
         this.marketManager.recordSale(player, item, 1L, price);
-        this.reputationManager.registerTrade(uuid, price);
+        this.reputationManager.registerTrade(player, price);
         this.economyHook.deposit(player, price);
         player.sendMessage("§aVendu 1x " + item.getDisplayName() + " pour " + this.economyHook.format(price));
     }

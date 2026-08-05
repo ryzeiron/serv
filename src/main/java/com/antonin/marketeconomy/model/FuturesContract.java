@@ -10,15 +10,19 @@ public class FuturesContract {
         SHORT
     }
 
-    private final UUID player;
+    private final UUID id;
+    private final UUID creator;
     private final Material material;
     private final Type type;
     private final double stake;
     private final double priceAtCreation;
     private final long maturityAtMillis;
+    private boolean settled = false;
+    private double lockedPayout = 0.0;
 
-    public FuturesContract(UUID player, Material material, Type type, double stake, double priceAtCreation, long maturityAtMillis) {
-        this.player = player;
+    public FuturesContract(UUID id, UUID creator, Material material, Type type, double stake, double priceAtCreation, long maturityAtMillis) {
+        this.id = id;
+        this.creator = creator;
         this.material = material;
         this.type = type;
         this.stake = stake;
@@ -26,8 +30,12 @@ public class FuturesContract {
         this.maturityAtMillis = maturityAtMillis;
     }
 
-    public UUID getPlayer() {
-        return this.player;
+    public UUID getId() {
+        return this.id;
+    }
+
+    public UUID getCreator() {
+        return this.creator;
     }
 
     public Material getMaterial() {
@@ -52,6 +60,21 @@ public class FuturesContract {
 
     public boolean isMatured(long nowMillis) {
         return nowMillis >= this.maturityAtMillis;
+    }
+
+    public boolean isSettled() {
+        return this.settled;
+    }
+
+    public double getLockedPayout() {
+        return this.lockedPayout;
+    }
+
+    // Fige le paiement au prix constate a l'echeance ; le contrat reste "au porteur"
+    // jusqu'a ce que quelqu'un l'encaisse (clic droit sur l'item physique)
+    public void settle(double priceAtMaturity) {
+        this.lockedPayout = this.computePayout(priceAtMaturity);
+        this.settled = true;
     }
 
     // LONG gagne quand le prix monte, SHORT gagne quand le prix baisse ; la mise ne peut pas tomber sous 0
