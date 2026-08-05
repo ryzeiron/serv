@@ -37,6 +37,10 @@ public class EconomyHook {
         return this.economy.depositPlayer((OfflinePlayer)player, amount).transactionSuccess();
     }
 
+    public boolean deposit(OfflinePlayer player, double amount) {
+        return this.economy.depositPlayer(player, amount).transactionSuccess();
+    }
+
     public String format(double amount) {
         return this.economy.format(amount);
     }

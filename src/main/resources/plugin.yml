@@ -17,6 +17,14 @@ commands:
   buy:
     description: Achete un item sur le marche
     usage: /buy <item> <quantite>
+  journal:
+    description: Recoit la derniere edition du journal du marche
+    usage: /journal
+    aliases: [gazette]
+  futures:
+    description: Contrats a terme sur le marche (parier sur la tendance)
+    usage: /futures <long|short|list> [item] [montant] [minutes]
+    aliases: [contrat]
   marketadmin:
     description: Commandes admin du marche (reset prix, ajout item)
     usage: /marketadmin <reset|additem|setprice> [args]

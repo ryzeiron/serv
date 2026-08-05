@@ -27,6 +27,10 @@ implements CommandExecutor {
             player.sendMessage("\u00a7cLe systeme d'economie (Vault) n'est pas disponible.");
             return true;
         }
+        if (this.plugin.getMarketManager().isSuspended(player.getUniqueId())) {
+            player.sendMessage("\u00a7cTon acces au marche est suspendu (" + this.plugin.getMarketManager().getSuspensionRemainingSeconds(player.getUniqueId()) + "s restantes).");
+            return true;
+        }
         if (args.length < 1) {
             player.sendMessage("\u00a7cUtilisation: /buy <item> <quantite>");
             return true;
@@ -62,7 +66,7 @@ implements CommandExecutor {
             return true;
         }
         this.plugin.getEconomyHook().withdraw(player, total);
-        this.plugin.getMarketManager().recordPurchase(item, amount, total);
+        this.plugin.getMarketManager().recordPurchase(player, item, amount, total);
         player.getInventory().addItem(new ItemStack[]{new ItemStack(material, amount)});
         player.sendMessage("\u00a7aAchete " + amount + "x " + item.getDisplayName() + " pour " + this.plugin.getEconomyHook().format(total));
         return true;

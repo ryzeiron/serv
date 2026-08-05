@@ -29,6 +29,32 @@ events:
   # Multiplicateur de volatilite applique aux items de la categorie touchee pendant l'evenement
   volatility-multiplier: 2.0
 
+# Detection de manipulation de marche (pump and dump) : si un joueur represente
+# une trop grosse part du volume d'un item sur un cycle, il est suspendu du trading
+manipulation:
+  enabled: true
+  # Volume total minimum sur un item avant de verifier (evite les faux positifs sur les items peu actifs)
+  min-volume: 40
+  # Part du volume total (0.0 a 1.0) au-dela de laquelle un joueur est flagge
+  share-threshold: 0.6
+  # Duree de la suspension du trading, en secondes
+  suspension-seconds: 120
+
+# Journal du marche (/journal) : titres generes automatiquement a chaque recalcul de prix
+journal:
+  # Nombre de titres conserves dans l'historique
+  history-length: 30
+  # Variation de prix minimale (%) sur un cycle pour generer un titre
+  headline-threshold-percent: 3.0
+
+# Contrats a terme (/futures) : parier sur la hausse (long) ou la baisse (short) d'un item
+futures:
+  min-stake: 10.0
+  # 0 = pas de plafond
+  max-stake: 0.0
+  min-minutes: 2
+  max-minutes: 120
+
 # Items disponibles sur le marche au demarrage : materiau, categorie, prix de base, stock initial, nom affiche
 # Categories possibles: RAW_MATERIALS, ORES, CONSUMABLES, MOB_DROPS, RARE, OTHER
 items:

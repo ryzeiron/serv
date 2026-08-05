@@ -26,6 +26,10 @@ implements CommandExecutor {
             player.sendMessage("\u00a7cLe systeme d'economie (Vault) n'est pas disponible.");
             return true;
         }
+        if (this.plugin.getMarketManager().isSuspended(player.getUniqueId())) {
+            player.sendMessage("\u00a7cTon acces au marche est suspendu (" + this.plugin.getMarketManager().getSuspensionRemainingSeconds(player.getUniqueId()) + "s restantes).");
+            return true;
+        }
         ItemStack hand = player.getInventory().getItemInMainHand();
         if (hand.getType().isAir()) {
             player.sendMessage("\u00a7cTiens l'item que tu veux vendre en main.");
@@ -50,7 +54,7 @@ implements CommandExecutor {
         double unitPrice = item.getSellPrice();
         double total = (double)Math.round(unitPrice * (double)amount * 100.0) / 100.0;
         hand.setAmount(hand.getAmount() - amount);
-        this.plugin.getMarketManager().recordSale(item, amount, total);
+        this.plugin.getMarketManager().recordSale(player, item, amount, total);
         this.plugin.getEconomyHook().deposit(player, total);
         player.sendMessage("\u00a7aVendu " + amount + "x " + item.getDisplayName() + " pour " + this.plugin.getEconomyHook().format(total));
         return true;

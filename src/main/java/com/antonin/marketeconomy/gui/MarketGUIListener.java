@@ -71,6 +71,10 @@ public class MarketGUIListener implements Listener {
             player.sendMessage("§cLe systeme d'economie (Vault) n'est pas disponible.");
             return;
         }
+        if (this.marketManager.isSuspended(player.getUniqueId())) {
+            player.sendMessage("§cTon acces au marche est suspendu (" + this.marketManager.getSuspensionRemainingSeconds(player.getUniqueId()) + "s restantes).");
+            return;
+        }
         if (event.getClick() == ClickType.LEFT) {
             this.handleBuy(player, item);
         } else if (event.getClick() == ClickType.RIGHT) {
@@ -90,7 +94,7 @@ public class MarketGUIListener implements Listener {
             return;
         }
         this.economyHook.withdraw(player, price);
-        this.marketManager.recordPurchase(item, 1L, price);
+        this.marketManager.recordPurchase(player, item, 1L, price);
         player.getInventory().addItem(new ItemStack(item.getMaterial(), 1));
         player.sendMessage("§aAcheté 1x " + item.getDisplayName() + " pour " + this.economyHook.format(price));
     }
@@ -103,7 +107,7 @@ public class MarketGUIListener implements Listener {
         }
         double price = item.getSellPrice();
         player.getInventory().removeItem(toRemove);
-        this.marketManager.recordSale(item, 1L, price);
+        this.marketManager.recordSale(player, item, 1L, price);
         this.economyHook.deposit(player, price);
         player.sendMessage("§aVendu 1x " + item.getDisplayName() + " pour " + this.economyHook.format(price));
     }
