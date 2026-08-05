@@ -47,6 +47,24 @@ journal:
   # Variation de prix minimale (%) sur un cycle pour generer un titre
   headline-threshold-percent: 3.0
 
+# PNJ marchands avec memoire : chaque villageois commerce selon son metier
+# (fermier -> consommables, armurier -> minerais, etc.) et ajuste ses prix selon
+# la confiance accumulee (achats reguliers) ou perdue (villageois tues) par joueur
+villagers:
+  # Score de confiance perdu quand le joueur tue un villageois
+  kill-penalty: 25.0
+  # Score de confiance gagne a chaque achat/vente avec un villageois
+  trade-gain: 1.5
+  # Seuils de confiance (0-100)
+  trusted-threshold: 80.0
+  liked-threshold: 60.0
+  weary-threshold: 20.0
+  hostile-threshold: 10.0
+  # En dessous du seuil hostile, le villageois refuse totalement de commercer
+  trusted-discount: 0.10
+  liked-discount: 0.05
+  weary-markup: 0.10
+
 # Contrats a terme (/futures) : parier sur la hausse (long) ou la baisse (short) d'un item
 futures:
   min-stake: 10.0
