@@ -73,25 +73,28 @@ public class VillagerTradeGUI {
         return Math.round(value * 100.0) / 100.0;
     }
 
+    // Villager.Profession n'est plus un enum classique dans l'API Paper recente (type
+    // "Keyed"), donc on ne peut plus faire switch(profession) directement : on bascule
+    // sur sa cle texte (ex. "farmer"), stable quelle que soit la forme du type en API.
     public static MarketCategory professionCategory(Villager.Profession profession) {
-        switch (profession) {
-            case FARMER:
-            case FISHERMAN:
-            case BUTCHER:
+        switch (profession.getKey().getKey()) {
+            case "farmer":
+            case "fisherman":
+            case "butcher":
                 return MarketCategory.CONSUMABLES;
-            case TOOLSMITH:
-            case WEAPONSMITH:
-            case ARMORER:
+            case "toolsmith":
+            case "weaponsmith":
+            case "armorer":
                 return MarketCategory.ORES;
-            case CARTOGRAPHER:
-            case LIBRARIAN:
-            case CLERIC:
+            case "cartographer":
+            case "librarian":
+            case "cleric":
                 return MarketCategory.RARE;
-            case LEATHERWORKER:
-            case SHEPHERD:
-            case MASON:
+            case "leatherworker":
+            case "shepherd":
+            case "mason":
                 return MarketCategory.RAW_MATERIALS;
-            case FLETCHER:
+            case "fletcher":
                 return MarketCategory.MOB_DROPS;
             default:
                 return MarketCategory.OTHER;
@@ -99,32 +102,32 @@ public class VillagerTradeGUI {
     }
 
     public static String villagerLabel(Villager.Profession profession) {
-        switch (profession) {
-            case FARMER:
+        switch (profession.getKey().getKey()) {
+            case "farmer":
                 return "Le Fermier";
-            case FISHERMAN:
+            case "fisherman":
                 return "Le Pêcheur";
-            case BUTCHER:
+            case "butcher":
                 return "Le Boucher";
-            case TOOLSMITH:
+            case "toolsmith":
                 return "L'Outilleur";
-            case WEAPONSMITH:
+            case "weaponsmith":
                 return "L'Armurier";
-            case ARMORER:
+            case "armorer":
                 return "Le Forgeron";
-            case CARTOGRAPHER:
+            case "cartographer":
                 return "Le Cartographe";
-            case LIBRARIAN:
+            case "librarian":
                 return "Le Bibliothécaire";
-            case CLERIC:
+            case "cleric":
                 return "Le Clerc";
-            case LEATHERWORKER:
+            case "leatherworker":
                 return "Le Tanneur";
-            case SHEPHERD:
+            case "shepherd":
                 return "Le Berger";
-            case MASON:
+            case "mason":
                 return "Le Maçon";
-            case FLETCHER:
+            case "fletcher":
                 return "Le Fléchier";
             default:
                 return "Le Villageois";
