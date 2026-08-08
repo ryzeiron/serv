@@ -58,16 +58,28 @@ def build_mine(seed, ore_table, ore_density, lithium_count, out_path):
         return "minecraft:stone" if h % 3 else "minecraft:cobblestone"
 
     print(f"[{out_path}] remplissage {SIZE}x{DEPTH}x{SIZE}...")
+    # Le lithium est place en petits filons (pas des blocs isoles) et plutot dans la moitie
+    # haute du gisement, pour rester trouvable en creusant normalement plutot que perdu au
+    # hasard dans 200 000 blocs
     lithium_spots = set()
+    veins_placed = 0
     attempts = 0
-    while len(lithium_spots) < lithium_count and attempts < lithium_count * 50:
+    while veins_placed < lithium_count and attempts < lithium_count * 30:
         attempts += 1
         lx = rng.randint(5, SIZE - 6)
         lz = rng.randint(6, SIZE - 6)
-        ly = rng.randint(2, DEPTH - 2)
+        ly = rng.randint(max(2, DEPTH // 2), DEPTH - 2)
         if on_platform(lx, lz):
             continue
-        lithium_spots.add((lx, ly, lz))
+        vein_size = rng.randint(3, 5)
+        cx, cy, cz = lx, ly, lz
+        for _ in range(vein_size):
+            if 0 <= cx < SIZE and 0 <= cy < DEPTH and 0 <= cz < SIZE and not on_platform(cx, cz):
+                lithium_spots.add((cx, cy, cz))
+            cx += rng.randint(-1, 1)
+            cy += rng.randint(-1, 1)
+            cz += rng.randint(-1, 1)
+        veins_placed += 1
 
     for x in range(SIZE):
         for z in range(SIZE):
@@ -139,5 +151,5 @@ TIER4_ORES = [
 
 build_mine(101, TIER1_ORES, 0.06, 0, f"{OUT_DIR}/mine_tier1.nbt")
 build_mine(202, TIER2_ORES, 0.05, 0, f"{OUT_DIR}/mine_tier2.nbt")
-build_mine(303, TIER3_ORES, 0.035, 10, f"{OUT_DIR}/mine_tier3.nbt")
-build_mine(404, TIER4_ORES, 0.045, 12, f"{OUT_DIR}/mine_tier4.nbt")
+build_mine(303, TIER3_ORES, 0.035, 18, f"{OUT_DIR}/mine_tier3.nbt")
+build_mine(404, TIER4_ORES, 0.045, 24, f"{OUT_DIR}/mine_tier4.nbt")
