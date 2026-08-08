@@ -6,6 +6,7 @@ import com.antonin.marketeconomy.command.HackCommands;
 import com.antonin.marketeconomy.command.HudCommand;
 import com.antonin.marketeconomy.command.JobCommands;
 import com.antonin.marketeconomy.command.JournalCommand;
+import com.antonin.marketeconomy.command.MarketAdminCommand;
 import com.antonin.marketeconomy.command.MineCommands;
 import com.antonin.marketeconomy.command.ModCommands;
 import com.antonin.marketeconomy.command.SpecialItemCommand;
@@ -56,6 +57,7 @@ public final class ServerEvents {
         JournalCommand.register(event.getDispatcher());
         HudCommand.register(event.getDispatcher());
         SpecialItemCommand.register(event.getDispatcher());
+        MarketAdminCommand.register(event.getDispatcher());
     }
 
     @SubscribeEvent

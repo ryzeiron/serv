@@ -172,6 +172,14 @@ Phase 11 : derniers details — Boussole du Marchand et menu graphique du marcha
 Avec cette phase, l'intégralité du plugin Paper (contenu, gameplay, interface graphique)
 est portee dans le mod Forge — plus aucune fonctionnalite majeure ne manque.
 
+Phase 12 : `/marketadmin` — utilitaires de test reserves aux admins (permission niveau
+2), pour donner de l'argent (`givemoney`), de l'xp de metier ou passer niveau max
+(`givexp <joueur> <hacker|mineur> <montant|max>`), ou des items custom (`giveitem
+<joueur> <lithium|plastique|ordinateur> [quantité]`) sans avoir a farmer — utile pour
+tester le mod une fois compile. `clearzone` (suppression de zone en masse) n'est pas
+porte : la commande vanilla `/fill ... air` couvre deja ce besoin sous Forge, contrairement
+a Bukkit qui n'a pas d'equivalent aussi pratique sans WorldEdit.
+
 Points d'API Forge 1.21 recents utilises ici sans pouvoir etre compiles/verifies dans ce
 sandbox (a checker en premier en cas d'erreur de compilation) :
 - `ChestMenu`'s protected constructor `(MenuType<?>, int, Inventory, Container, int)` dans
