@@ -138,9 +138,20 @@ applicable si besoin).
   argument) ferment le menu et suggerent la commande a completer dans le chat. Remplace
   l'ancien `HackerTerminal` tout-en-chat (supprime).
 
-Pas encore porte : le HUD, le mini-jeu de `/hack terminal`, et un vrai menu graphique pour
-le marchand PNJ (actuellement en chat cliquable, mais reutiliserait `DisplayMenu` de la
-meme facon si souhaite).
+Phase 9 : HUD. Le plugin Paper affichait une barre laterale scoreboard personnelle (un
+`Scoreboard` par joueur, propre a l'API Bukkit). Le vanilla n'a qu'un seul `Scoreboard`
+partage par tout le serveur : une vraie barre laterale personnalisee par joueur
+demanderait soit d'envoyer des paquets de score bruts directement sur la connexion de
+chaque joueur (contournant le `Scoreboard` partage), soit un canal reseau custom — deux
+API plus recentes et plus incertaines que tout ce qui a ete utilise jusqu'ici, evitees
+par prudence. A la place, `HudManager` affiche les memes infos (solde, banque, metier,
+tendance marche, ile) condensees sur une seule ligne en **barre d'action**
+(`Player#displayClientMessage`, methode vanilla simple et stable), rafraichie toutes les
+2s. `/hud [on|off]` bascule l'affichage (persiste en JSON, comme l'original).
+
+Il ne reste que le mini-jeu de `/hack terminal` et un vrai menu graphique pour le
+marchand PNJ (actuellement en chat cliquable, mais reutiliserait `DisplayMenu` de la
+meme facon si souhaite) — tout le reste du plugin Paper est porte.
 
 Points d'API Forge 1.21 recents utilises ici sans pouvoir etre compiles/verifies dans ce
 sandbox (a checker en premier en cas d'erreur de compilation) :
@@ -163,9 +174,6 @@ sandbox (a checker en premier en cas d'erreur de compilation) :
 - `VillagerData#getProfession()` dans `VillagerEvents` : suppose qu'il renvoie un
   `Holder<VillagerProfession>` (d'ou l'appel `.value()`) plutot qu'un `VillagerProfession`
   direct — a verifier en premier si `VillagerEvents` ne compile pas.
-
-Il ne reste que le HUD et le mini-jeu du terminal Hacker — tout le contenu/gameplay et
-l'essentiel de l'interface (menus cliquables) sont maintenant portes.
 
 ## Build
 

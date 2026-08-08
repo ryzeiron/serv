@@ -3,6 +3,7 @@ package com.antonin.marketeconomy.server;
 import com.antonin.marketeconomy.economy.BankManager;
 import com.antonin.marketeconomy.economy.EconomyManager;
 import com.antonin.marketeconomy.hacker.HackerAbilityService;
+import com.antonin.marketeconomy.hud.HudManager;
 import com.antonin.marketeconomy.island.IslandManager;
 import com.antonin.marketeconomy.job.JobManager;
 import com.antonin.marketeconomy.market.MarketManager;
@@ -27,6 +28,7 @@ public class MarketEconomyServer {
     private final WarpManager warpManager;
     private final IslandManager islandManager;
     private final ReputationManager reputationManager;
+    private final HudManager hudManager;
 
     private MarketEconomyServer(MinecraftServer server) {
         var dataDir = server.getWorldPath(LevelResource.ROOT).resolve("marketeconomy");
@@ -39,6 +41,7 @@ public class MarketEconomyServer {
         this.warpManager = new WarpManager(dataDir.resolve("warps.json"));
         this.islandManager = new IslandManager(dataDir.resolve("islands.json"));
         this.reputationManager = new ReputationManager(dataDir.resolve("reputation.json"));
+        this.hudManager = new HudManager(dataDir.resolve("hud.json"));
     }
 
     public static void start(MinecraftServer server) {
@@ -56,6 +59,7 @@ public class MarketEconomyServer {
         instance.warpManager.save();
         instance.islandManager.save();
         instance.reputationManager.save();
+        instance.hudManager.save();
         instance = null;
     }
 
@@ -97,5 +101,9 @@ public class MarketEconomyServer {
 
     public ReputationManager getReputationManager() {
         return this.reputationManager;
+    }
+
+    public HudManager getHudManager() {
+        return this.hudManager;
     }
 }
