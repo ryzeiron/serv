@@ -55,8 +55,8 @@ commands:
     usage: /setpvp
     permission: marketeconomy.admin
   marketadmin:
-    description: Commandes admin du marche (reset prix, ajout item)
-    usage: /marketadmin <reset|additem|setprice> [args]
+    description: Commandes admin (suppression de zone/structure)
+    usage: /marketadmin clearzone <tailleX> <tailleY> <tailleZ> [confirm]
     permission: marketeconomy.admin
 
 permissions:

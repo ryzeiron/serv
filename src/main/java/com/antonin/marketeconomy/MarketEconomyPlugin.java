@@ -5,6 +5,7 @@ import com.antonin.marketeconomy.commands.BuyCommand;
 import com.antonin.marketeconomy.commands.FuturesCommand;
 import com.antonin.marketeconomy.commands.IslandCommand;
 import com.antonin.marketeconomy.commands.JournalCommand;
+import com.antonin.marketeconomy.commands.MarketAdminCommand;
 import com.antonin.marketeconomy.commands.MarketCommand;
 import com.antonin.marketeconomy.commands.PrimeCommand;
 import com.antonin.marketeconomy.commands.PvpCommand;
@@ -55,6 +56,7 @@ extends JavaPlugin {
         this.getCommand("ile").setExecutor((CommandExecutor)new IslandCommand(this));
         this.getCommand("sethub").setExecutor((CommandExecutor)new SetHubCommand(this));
         this.getCommand("setpvp").setExecutor((CommandExecutor)new SetPvpCommand(this));
+        this.getCommand("marketadmin").setExecutor((CommandExecutor)new MarketAdminCommand(this));
 
         Bukkit.getPluginManager().registerEvents((Listener)new MarketGUIListener(this), (Plugin)this);
         Bukkit.getPluginManager().registerEvents((Listener)new VillagerInteractionListener(this), (Plugin)this);
