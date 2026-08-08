@@ -40,6 +40,13 @@ public class JobManager {
         this.save();
     }
 
+    // Fixe directement le niveau du metier "type" (utilitaire admin/test, contourne la
+    // progression normale par xp)
+    public void setLevel(UUID uuid, JobType type, int level) {
+        this.jobs.put(uuid, new PlayerJob(type, level, 0.0));
+        this.save();
+    }
+
     // Ajoute de l'xp au metier "type" du joueur (ne fait rien s'il n'exerce pas ce metier) ;
     // annonce les montees de niveau
     public void addXp(Player player, JobType type, double amount) {

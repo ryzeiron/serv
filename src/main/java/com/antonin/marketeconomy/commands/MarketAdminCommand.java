@@ -1,6 +1,9 @@
 package com.antonin.marketeconomy.commands;
 
 import com.antonin.marketeconomy.MarketEconomyPlugin;
+import com.antonin.marketeconomy.items.CustomMaterials;
+import com.antonin.marketeconomy.items.HackerComputerItem;
+import com.antonin.marketeconomy.model.JobType;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -11,6 +14,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class MarketAdminCommand implements CommandExecutor {
@@ -26,7 +30,7 @@ public class MarketAdminCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage("§6[Marché] §eUsage: /marketadmin <clearzone|givemoney|spawnmine> ...");
+            sender.sendMessage("§6[Marché] §eUsage: /marketadmin <clearzone|givemoney|spawnmine|givexp|giveitem> ...");
             return true;
         }
         if (args[0].equalsIgnoreCase("givemoney")) {
@@ -34,6 +38,12 @@ public class MarketAdminCommand implements CommandExecutor {
         }
         if (args[0].equalsIgnoreCase("spawnmine")) {
             return this.handleSpawnMine(sender, args);
+        }
+        if (args[0].equalsIgnoreCase("givexp")) {
+            return this.handleGiveXp(sender, args);
+        }
+        if (args[0].equalsIgnoreCase("giveitem")) {
+            return this.handleGiveItem(sender, args);
         }
         if (!args[0].equalsIgnoreCase("clearzone")) {
             sender.sendMessage("§6[Marché] §eUsage: /marketadmin clearzone <tailleX> <tailleY> <tailleZ> [confirm]");
@@ -185,6 +195,87 @@ public class MarketAdminCommand implements CommandExecutor {
             return true;
         }
         player.sendMessage("§6[Marché] §aMine du palier " + tier + " posée (à partir de ta position, coin étendu vers +X/+Y/+Z).");
+        return true;
+    }
+
+    private boolean handleGiveXp(CommandSender sender, String[] args) {
+        if (args.length < 4) {
+            sender.sendMessage("§6[Marché] §eUsage: /marketadmin givexp <joueur> <hacker|mineur> <montant|max>");
+            return true;
+        }
+        Player target = Bukkit.getPlayer(args[1]);
+        if (target == null) {
+            sender.sendMessage("§6[Marché] §cJoueur introuvable ou hors ligne.");
+            return true;
+        }
+        JobType type = JobType.fromString(args[2]);
+        if (type == null) {
+            sender.sendMessage("§6[Marché] §cMétier invalide (hacker|mineur).");
+            return true;
+        }
+        if (!this.plugin.getJobManager().hasJob(target.getUniqueId(), type)) {
+            this.plugin.getJobManager().setJob(target.getUniqueId(), type);
+        }
+        if (args[3].equalsIgnoreCase("max")) {
+            this.plugin.getJobManager().setLevel(target.getUniqueId(), type, type.getMaxLevel());
+            sender.sendMessage("§6[Marché] §a" + target.getName() + " est maintenant " + type.getDisplayName()
+                    + " §aniveau max (" + type.getMaxLevel() + ").");
+            target.sendMessage("§6[Métier] §eTon niveau " + type.getDisplayName() + " §eest maintenant au maximum.");
+            return true;
+        }
+        double amount;
+        try {
+            amount = Double.parseDouble(args[3]);
+        } catch (NumberFormatException e) {
+            sender.sendMessage("§6[Marché] §cMontant invalide (nombre ou \"max\").");
+            return true;
+        }
+        this.plugin.getJobManager().addXp(target, type, amount);
+        sender.sendMessage("§6[Marché] §aDonné " + amount + " xp " + type.getDisplayName() + " §aà " + target.getName() + ".");
+        return true;
+    }
+
+    private boolean handleGiveItem(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§6[Marché] §eUsage: /marketadmin giveitem <joueur> <lithium|plastique|ordinateur> [quantité]");
+            return true;
+        }
+        Player target = Bukkit.getPlayer(args[1]);
+        if (target == null) {
+            sender.sendMessage("§6[Marché] §cJoueur introuvable ou hors ligne.");
+            return true;
+        }
+        int amount = 1;
+        if (args.length >= 4) {
+            try {
+                amount = Math.max(1, Integer.parseInt(args[3]));
+            } catch (NumberFormatException e) {
+                sender.sendMessage("§6[Marché] §cQuantité invalide.");
+                return true;
+            }
+        }
+        ItemStack item;
+        String kind = args[2].toLowerCase();
+        switch (kind) {
+            case "lithium":
+                item = CustomMaterials.createLithiumIngot(this.plugin);
+                break;
+            case "plastique":
+            case "plastic":
+                item = CustomMaterials.createPlastic(this.plugin);
+                break;
+            case "ordinateur":
+            case "computer":
+                item = HackerComputerItem.create(this.plugin);
+                break;
+            default:
+                sender.sendMessage("§6[Marché] §cItem inconnu (lithium|plastique|ordinateur).");
+                return true;
+        }
+        item.setAmount(amount);
+        target.getInventory().addItem(item);
+        sender.sendMessage("§6[Marché] §aDonné " + amount + "x " + kind + " à " + target.getName() + ".");
+        target.sendMessage("§6[Marché] §eTu as reçu " + amount + "x " + kind + " d'un admin.");
         return true;
     }
 }
