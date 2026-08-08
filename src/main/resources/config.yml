@@ -78,6 +78,57 @@ futures:
   min-minutes: 2
   max-minutes: 120
 
+# Metiers (/metier) : progression par xp/niveau, un metier a la fois par joueur
+jobs:
+  # Xp necessaire pour passer du niveau N au niveau N+1 = xp-per-level-base * N (niveau max 10)
+  xp-per-level-base: 100.0
+  hacker:
+    # /hack market <item> : rapport d'initie sur la pression de prix du cycle en cours
+    insider-cooldown-seconds: 20
+    xp-insider: 5.0
+    # /hack price <item> <up|down> : injecte une fausse activite pour pousser le prix.
+    # Se comporte comme une vraie manipulation (detectable) sauf trace brouillee juste avant
+    price-hack-cooldown-seconds: 300
+    price-hack-cost: 200.0
+    price-hack-fake-volume-base: 60
+    price-hack-fake-volume-per-level: 10
+    xp-price-hack: 15.0
+    # /hack scramble : immunise temporairement contre la detection de manipulation
+    scramble-cooldown-seconds: 600
+    scramble-cost: 150.0
+    scramble-duration-seconds: 300
+    xp-scramble: 10.0
+    # /hack wiretap <joueur> : intercepte un % des ventes (marche + villageois) de la cible
+    wiretap-cooldown-seconds: 900
+    wiretap-cost: 300.0
+    wiretap-duration-seconds: 180
+    wiretap-cut-base: 0.05
+    wiretap-cut-per-level: 0.01
+    wiretap-cut-max: 0.15
+    # Chance (0.0-1.0) d'etre repere a chaque vente interceptee (rend le hacker primable)
+    wiretap-catch-chance-base: 0.30
+    wiretap-catch-chance-per-level: 0.02
+    wiretap-catch-chance-min: 0.05
+    # Delai avant de pouvoir re-cibler la meme victime, en secondes
+    wiretap-target-cooldown-seconds: 1800
+    xp-wiretap-start: 20.0
+    # /hack banque <joueur> : tente de pirater la banque d'ile de la cible
+    bank-hack-cooldown-seconds: 2700
+    bank-hack-target-cooldown-seconds: 10800
+    bank-hack-cost: 500.0
+    bank-hack-chance-base: 0.40
+    bank-hack-chance-per-level: 0.05
+    bank-hack-chance-max: 0.85
+    # Part du solde bancaire volee en cas de reussite
+    bank-hack-drain-share: 0.30
+    xp-bank-hack-success: 60.0
+    # /hack terminal : mini-jeu (grille 3x3, 3 essais) contre du loot
+    terminal-cooldown-seconds: 180
+    terminal-reward-base: 50.0
+    terminal-reward-per-level: 15.0
+    xp-terminal-success: 40.0
+    xp-terminal-fail: 10.0
+
 # Items disponibles sur le marche au demarrage : materiau, categorie, prix de base, stock initial, nom affiche
 # Categories possibles: RAW_MATERIALS, ORES, CONSUMABLES, MOB_DROPS, RARE, OTHER
 items:

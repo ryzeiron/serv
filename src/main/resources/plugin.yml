@@ -58,6 +58,19 @@ commands:
     description: Commandes admin (suppression de zone/structure)
     usage: /marketadmin clearzone <tailleX> <tailleY> <tailleZ> [confirm]
     permission: marketeconomy.admin
+  metier:
+    description: Choisis ou consulte ton metier
+    usage: /metier [hacker]
+    aliases: [job]
+    permission: marketeconomy.use
+  banque:
+    description: Banque d'ile (depot/retrait a l'abri de ta poche)
+    usage: /banque <solde|deposer|retirer> [montant]
+    permission: marketeconomy.use
+  hack:
+    description: Capacites du metier Hacker
+    usage: /hack <market|price|scramble|wiretap|banque|terminal> [args]
+    permission: marketeconomy.use
 
 permissions:
   marketeconomy.use:

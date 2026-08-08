@@ -5,6 +5,7 @@ import com.antonin.marketeconomy.model.FuturesContract;
 import com.antonin.marketeconomy.model.MarketCategory;
 import com.antonin.marketeconomy.model.MarketEvent;
 import com.antonin.marketeconomy.model.MarketItem;
+import com.antonin.marketeconomy.model.Wiretap;
 import com.antonin.marketeconomy.storage.EconomyHook;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -72,6 +73,11 @@ public class MarketManager {
     private final int futuresMaxMinutes;
     private final Map<UUID, FuturesContract> contracts = new HashMap<>();
 
+    // --- Metier Hacker : ecoutes de ventes (wiretap) et brouillage de trace ---
+    private final Map<UUID, Wiretap> activeWiretaps = new HashMap<>(); // cle = cible
+    private final Map<UUID, Long> wiretapTargetCooldownUntil = new HashMap<>();
+    private final Map<UUID, Long> traceImmuneUntil = new HashMap<>(); // cle = hacker
+
     public MarketManager(MarketEconomyPlugin plugin, EconomyHook economyHook) {
         this.economyHook = economyHook;
         FileConfiguration config = plugin.getConfig();
@@ -120,6 +126,13 @@ public class MarketManager {
         }
         this.lastIndexValue = this.computeIndex();
         this.previousIndexValue = this.lastIndexValue;
+    }
+
+    private String formatAmount(double amount) {
+        if (this.economyHook != null && this.economyHook.isEnabled()) {
+            return this.economyHook.format(amount);
+        }
+        return String.valueOf(Math.round(amount * 100.0) / 100.0);
     }
 
     private static String defaultDisplayName(Material material) {
@@ -235,6 +248,10 @@ public class MarketManager {
 
     // Ne bloque plus le trading : rend simplement le joueur "primable" pendant une fenetre de temps
     private void flagManipulation(UUID uuid, MarketItem item, double share) {
+        Long immuneUntil = this.traceImmuneUntil.get(uuid);
+        if (immuneUntil != null && immuneUntil > System.currentTimeMillis()) {
+            return;
+        }
         this.bountyEligibleUntil.put(uuid, System.currentTimeMillis() + this.bountyEligibleMillis);
         Player player = Bukkit.getPlayer(uuid);
         String name = player != null ? player.getName() : "Un joueur";
@@ -281,24 +298,140 @@ public class MarketManager {
         return null;
     }
 
-    // A appeler avant de crediter une vente : redirige la part de la prime vers le placeur et
-    // renvoie ce qu'il reste a verser au vendeur
+    // A appeler avant de crediter une vente : redirige la part de la prime puis celle d'une
+    // eventuelle ecoute (wiretap) de Hacker, et renvoie ce qu'il reste a verser au vendeur
     public double applyBountyCut(Player seller, double saleAmount) {
+        double remaining = saleAmount;
+
         Bounty bounty = this.activeBounties.get(seller.getUniqueId());
-        if (bounty == null) {
-            return saleAmount;
-        }
-        double cut = saleAmount * bounty.getCutShare();
-        if (this.economyHook != null && this.economyHook.isEnabled() && cut > 0.0) {
-            OfflinePlayer placer = Bukkit.getOfflinePlayer(bounty.getPlacer());
-            this.economyHook.deposit(placer, cut);
-            Player onlinePlacer = Bukkit.getPlayer(bounty.getPlacer());
-            if (onlinePlacer != null) {
-                onlinePlacer.sendMessage("§6[Prime] §eTa cible " + seller.getName() + " a vendu — tu touches "
-                        + this.economyHook.format(cut) + ".");
+        if (bounty != null) {
+            double cut = remaining * bounty.getCutShare();
+            if (this.economyHook != null && this.economyHook.isEnabled() && cut > 0.0) {
+                OfflinePlayer placer = Bukkit.getOfflinePlayer(bounty.getPlacer());
+                this.economyHook.deposit(placer, cut);
+                Player onlinePlacer = Bukkit.getPlayer(bounty.getPlacer());
+                if (onlinePlacer != null) {
+                    onlinePlacer.sendMessage("§6[Prime] §eTa cible " + seller.getName() + " a vendu — tu touches "
+                            + this.economyHook.format(cut) + ".");
+                }
             }
+            remaining -= cut;
         }
-        return saleAmount - cut;
+
+        remaining = this.applyWiretapCut(seller, remaining);
+        return remaining;
+    }
+
+    private double applyWiretapCut(Player seller, double remaining) {
+        Wiretap wiretap = this.activeWiretaps.get(seller.getUniqueId());
+        if (wiretap == null || this.economyHook == null || !this.economyHook.isEnabled()) {
+            return remaining;
+        }
+        double cut = Math.round(remaining * wiretap.getCutShare() * 100.0) / 100.0;
+        if (cut <= 0.0) {
+            return remaining;
+        }
+        OfflinePlayer hackerOff = Bukkit.getOfflinePlayer(wiretap.getHacker());
+        this.economyHook.deposit(hackerOff, cut);
+        wiretap.addSkimmed(cut);
+        Player hackerOnline = Bukkit.getPlayer(wiretap.getHacker());
+        if (hackerOnline != null) {
+            hackerOnline.sendMessage("§5[Hack] §dInterception sur " + seller.getName() + " : +"
+                    + this.economyHook.format(cut) + ".");
+        }
+        if (!wiretap.isCaught() && this.random.nextDouble() < wiretap.getCatchChance()) {
+            wiretap.setCaught(true);
+            String hackerName = hackerOff.getName() != null ? hackerOff.getName() : "un joueur";
+            seller.sendMessage("§c[!] Intrusion détectée sur tes ventes : " + hackerName
+                    + " t'espionnait ! Tu peux le signaler avec §7/prime " + hackerName);
+            this.bountyEligibleUntil.put(wiretap.getHacker(), System.currentTimeMillis() + this.bountyEligibleMillis);
+            Bukkit.broadcastMessage("§4[Marché] §c" + hackerName + " a été repéré en train de pirater les ventes de "
+                    + seller.getName() + " ! Une prime peut être placée (§7/prime " + hackerName + "§c).");
+        }
+        return remaining - cut;
+    }
+
+    // --- Metier Hacker ---
+
+    // Pose une ecoute sur les ventes de "target" ; renvoie un message d'erreur, ou null si l'ecoute
+    // a bien ete posee
+    public String startWiretap(Player hacker, Player target, double cutShare, double catchChance,
+            long durationMillis, long targetCooldownMillis) {
+        if (hacker.getUniqueId().equals(target.getUniqueId())) {
+            return "Tu ne peux pas te pirater toi-même.";
+        }
+        Long targetCd = this.wiretapTargetCooldownUntil.get(target.getUniqueId());
+        if (targetCd != null && targetCd > System.currentTimeMillis()) {
+            return target.getName() + " a été ciblé récemment, réessaie plus tard.";
+        }
+        if (this.activeWiretaps.containsKey(target.getUniqueId())) {
+            return target.getName() + " est déjà sous écoute.";
+        }
+        long expiresAt = System.currentTimeMillis() + durationMillis;
+        this.activeWiretaps.put(target.getUniqueId(),
+                new Wiretap(target.getUniqueId(), hacker.getUniqueId(), cutShare, catchChance, expiresAt));
+        this.wiretapTargetCooldownUntil.put(target.getUniqueId(), expiresAt + targetCooldownMillis);
+        return null;
+    }
+
+    // Rend "hacker" temporairement invisible a la detection de manipulation de marche
+    public void scrambleTrace(Player hacker, long durationMillis) {
+        this.traceImmuneUntil.put(hacker.getUniqueId(), System.currentTimeMillis() + durationMillis);
+    }
+
+    // Injecte une fausse activite massive sur "item" pour en pousser le prix (pump si up=true,
+    // sinon dump). Comme une vraie manipulation, ca peut declencher la detection au prochain tick
+    // sauf si la trace a ete brouillee juste avant
+    public void hackPrice(Player hacker, MarketItem item, boolean up, long fakeVolume) {
+        if (up) {
+            item.registerBuy(fakeVolume);
+            this.totalBought += fakeVolume;
+        } else {
+            item.registerSell(fakeVolume);
+            this.totalSold += fakeVolume;
+        }
+        this.trackPlayerActivity(hacker, item.getMaterial(), up ? fakeVolume : 0L, up ? 0L : fakeVolume);
+    }
+
+    // "Vole" les infos d'initie sur un item : pression du cycle en cours (pas encore appliquee au
+    // prix) + evenement de marche en cours sur sa categorie
+    public String getInsiderReport(MarketItem item) {
+        long bought = item.getRecentBought();
+        long sold = item.getRecentSold();
+        long net = bought - sold;
+        String direction = net > 0 ? "§ahausse probable" : net < 0 ? "§cbaisse probable" : "§7stable";
+        boolean eventBrewing = this.activeEvent != null
+                && (this.activeEvent.getCategory() == null || this.activeEvent.getCategory() == item.getCategory());
+        StringBuilder sb = new StringBuilder();
+        sb.append("§5[Hack] §dRapport d'initié — §f").append(item.getDisplayName()).append("\n");
+        sb.append("§7Prix actuel: §f").append(this.formatAmount(item.getCurrentPrice()))
+                .append(" §7| Tendance affichée: ").append(item.getTrendArrow()).append("\n");
+        sb.append("§7Pression du cycle en cours (pas encore visible publiquement): §f").append(bought)
+                .append(" achats / ").append(sold).append(" ventes → ").append(direction);
+        if (eventBrewing) {
+            sb.append("\n§c⚠ Un évènement de marché est actif sur cette catégorie.");
+        }
+        return sb.toString();
+    }
+
+    private void tickWiretaps() {
+        if (this.activeWiretaps.isEmpty()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        this.activeWiretaps.entrySet().removeIf(entry -> {
+            Wiretap wiretap = entry.getValue();
+            if (!wiretap.isExpired(now)) {
+                return false;
+            }
+            Player target = Bukkit.getPlayer(wiretap.getTarget());
+            if (target != null && !wiretap.isCaught() && wiretap.getTotalSkimmed() > 0.0) {
+                target.sendMessage("§7Tu remarques après coup une activité suspecte sur tes dernières ventes... (environ "
+                        + this.formatAmount(wiretap.getTotalSkimmed())
+                        + " manquants, origine inconnue)");
+            }
+            return true;
+        });
     }
 
     private void tickBounties() {
@@ -425,6 +558,7 @@ public class MarketManager {
         this.generateMoveHeadline(biggestMoveItem, biggestMoveChangePercent);
         this.tickContracts();
         this.tickBounties();
+        this.tickWiretaps();
         this.playerActivity.clear();
 
         this.previousIndexValue = this.lastIndexValue;

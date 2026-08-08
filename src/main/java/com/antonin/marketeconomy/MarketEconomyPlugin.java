@@ -1,9 +1,12 @@
 package com.antonin.marketeconomy;
 
 import com.antonin.marketeconomy.MarketManager;
+import com.antonin.marketeconomy.commands.BankCommand;
 import com.antonin.marketeconomy.commands.BuyCommand;
 import com.antonin.marketeconomy.commands.FuturesCommand;
+import com.antonin.marketeconomy.commands.HackCommand;
 import com.antonin.marketeconomy.commands.IslandCommand;
+import com.antonin.marketeconomy.commands.JobCommand;
 import com.antonin.marketeconomy.commands.JournalCommand;
 import com.antonin.marketeconomy.commands.MarketAdminCommand;
 import com.antonin.marketeconomy.commands.MarketCommand;
@@ -14,6 +17,7 @@ import com.antonin.marketeconomy.commands.SetHubCommand;
 import com.antonin.marketeconomy.commands.SetPvpCommand;
 import com.antonin.marketeconomy.commands.SpawnCommand;
 import com.antonin.marketeconomy.commands.SpecialItemCommand;
+import com.antonin.marketeconomy.gui.HackTerminalListener;
 import com.antonin.marketeconomy.gui.MarketGUIListener;
 import com.antonin.marketeconomy.gui.VillagerInteractionListener;
 import com.antonin.marketeconomy.items.FuturesRedeemListener;
@@ -32,6 +36,8 @@ extends JavaPlugin {
     private ReputationManager reputationManager;
     private WarpManager warpManager;
     private IslandManager islandManager;
+    private JobManager jobManager;
+    private BankManager bankManager;
 
     public void onEnable() {
         this.saveDefaultConfig();
@@ -43,6 +49,8 @@ extends JavaPlugin {
         this.reputationManager = new ReputationManager(this);
         this.warpManager = new WarpManager(this);
         this.islandManager = new IslandManager(this);
+        this.jobManager = new JobManager(this);
+        this.bankManager = new BankManager(this);
 
         this.getCommand("market").setExecutor((CommandExecutor)new MarketCommand(this));
         this.getCommand("buy").setExecutor((CommandExecutor)new BuyCommand(this));
@@ -57,11 +65,15 @@ extends JavaPlugin {
         this.getCommand("sethub").setExecutor((CommandExecutor)new SetHubCommand(this));
         this.getCommand("setpvp").setExecutor((CommandExecutor)new SetPvpCommand(this));
         this.getCommand("marketadmin").setExecutor((CommandExecutor)new MarketAdminCommand(this));
+        this.getCommand("metier").setExecutor((CommandExecutor)new JobCommand(this));
+        this.getCommand("banque").setExecutor((CommandExecutor)new BankCommand(this));
+        this.getCommand("hack").setExecutor((CommandExecutor)new HackCommand(this));
 
         Bukkit.getPluginManager().registerEvents((Listener)new MarketGUIListener(this), (Plugin)this);
         Bukkit.getPluginManager().registerEvents((Listener)new VillagerInteractionListener(this), (Plugin)this);
         Bukkit.getPluginManager().registerEvents((Listener)new FuturesRedeemListener(this), (Plugin)this);
         Bukkit.getPluginManager().registerEvents((Listener)new PlayerJoinListener(this), (Plugin)this);
+        Bukkit.getPluginManager().registerEvents((Listener)new HackTerminalListener(this), (Plugin)this);
 
         long intervalTicks = this.getConfig().getLong("price-update-interval", 60L) * 20L;
         Bukkit.getScheduler().runTaskTimer((Plugin)this, () -> this.marketManager.recalculateAll(), intervalTicks, intervalTicks);
@@ -73,6 +85,12 @@ extends JavaPlugin {
     public void onDisable() {
         if (this.reputationManager != null) {
             this.reputationManager.save();
+        }
+        if (this.jobManager != null) {
+            this.jobManager.save();
+        }
+        if (this.bankManager != null) {
+            this.bankManager.save();
         }
         this.getLogger().info("MarketEconomy desactive.");
     }
@@ -95,5 +113,13 @@ extends JavaPlugin {
 
     public IslandManager getIslandManager() {
         return this.islandManager;
+    }
+
+    public JobManager getJobManager() {
+        return this.jobManager;
+    }
+
+    public BankManager getBankManager() {
+        return this.bankManager;
     }
 }
