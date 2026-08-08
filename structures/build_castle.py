@@ -1,17 +1,14 @@
-"""Genere spawn_castle.nbt : chateau + village sur une plateforme de 500x500,
-en remplacement du hub actuel. Reutilise structure_lib (memes conventions que
-build_hub.py / build_plaza.py / build_pvp.py).
+"""Genere spawn_castle.nbt : chateau fort moyen-age + village sur une
+plateforme de 500x500. Reutilise structure_lib (StructureBuilder eparse :
+seuls les blocs explicitement poses sont stockes -> pas de cout pour le
+vide) et l'approche "coques creuses" pour rester a une taille raisonnable.
 
-Principe cle pour rester dans une taille de fichier raisonnable malgre les
-500x500 : uniquement des blocs explicitement definis sont stockes (structure
-"eparse" - cf. structure_lib), et tous les volumes (tours, murs, maisons)
-sont construits en coques creuses (parois) plutot qu'en blocs pleins.
-
-v2 : chateau plus detaille (murs texture, fenetres/meurtrieres, tours
-jumelles au porche, drapeaux, puits) + village beaucoup plus dense et
-varie (rues concentriques avec maisons des deux cotes, jardins, 8
-variantes de batiments, 2 batiments-reperes (taverne, chapelle),
-champs cultives).
+v3 : chateau concentrique veritablement "style moyen-age" (motte avec
+donjon a etages + contreforts, enceinte interieure autour de la motte,
+enceinte exterieure avec tours d'angle + tours de flanquement + barbacane
+a double porte, pont-levis a chaines), basse-cour avec forge/ecurie/puits/
+stands, et une passe de decoration (lampadaires le long des rues, buissons,
+parterres de fleurs, bancs, statues au portail) sur tout le site.
 """
 import math
 import random
@@ -21,12 +18,12 @@ sys.path.insert(0, "/home/user/serv/structures")
 from structure_lib import StructureBuilder, verify
 
 SIZE = 500
-HEIGHT = 90
+HEIGHT = 100
 GROUND_Y = 20
 CX = SIZE // 2
 CZ = SIZE // 2
 
-rng = random.Random(2024)
+rng = random.Random(77)
 
 b = StructureBuilder(SIZE, HEIGHT, SIZE)
 
@@ -63,28 +60,7 @@ for x in range(SIZE):
 print("  blocs:", len(b.blocks))
 
 
-# ------------------------------------------------------------------- moat
-def carve_moat(cx, cz, inner_r, outer_r):
-    inner2, outer2 = inner_r * inner_r, outer_r * outer_r
-    for x in range(max(0, cx - outer_r - 1), min(SIZE, cx + outer_r + 2)):
-        for z in range(max(0, cz - outer_r - 1), min(SIZE, cz + outer_r + 2)):
-            dx, dz = x - cx, z - cz
-            d2 = dx * dx + dz * dz
-            if inner2 <= d2 <= outer2:
-                for y in range(GROUND_Y - 4, GROUND_Y + 1):
-                    b.set_block(x, y, z, "minecraft:water")
-            if (outer2 < d2 <= (outer_r + 1) * (outer_r + 1)) or (
-                (inner_r - 1) * (inner_r - 1) <= d2 < inner2
-            ):
-                b.set_block(x, GROUND_Y, z, "minecraft:stone_brick_slab")
-
-
-print("Douves...")
-carve_moat(CX, CZ, 34, 41)
-print("  blocs:", len(b.blocks))
-
-
-# ---------------------------------------------------------------- helpers
+# --------------------------------------------------------------- helpers
 def hollow_cylinder(cx, cz, y0, y1, r, mat_fn, thickness=1):
     for y in range(y0, y1 + 1):
         for ang in range(0, 720):
@@ -166,6 +142,19 @@ def box_shell(x0, y0, z0, x1, y1, z1, name, skip_top=False, skip_bottom=True):
                         b.set_block(x, y, z, name)
 
 
+def buttresses(cx, cz, r, y0, y1, count=8, mat="minecraft:stone_bricks"):
+    for i in range(count):
+        ang = 360 * i / count
+        t = math.radians(ang)
+        for y in range(y0, y1 + 1):
+            taper = int((y - y0) / max(1, (y1 - y0)) * 2)
+            rr = r + 1 - taper
+            x = round(cx + rr * math.cos(t))
+            z = round(cz + rr * math.sin(t))
+            if in_bounds(x, z) and 0 <= y < HEIGHT:
+                b.set_block(x, y, z, mat)
+
+
 def well(cx, cz):
     disk(cx, cz, GROUND_Y - 1, 2, "minecraft:water")
     hollow_cylinder(cx, cz, GROUND_Y, GROUND_Y + 2, 2, "minecraft:cobblestone", thickness=1)
@@ -181,12 +170,13 @@ def well(cx, cz):
         b.set_block(cx, GROUND_Y + 5, cz + dz, "minecraft:spruce_slab")
 
 
-def tower(cx, cz, r, wall_top, roof_h, roof_mats, floors=(), windows_ys=None, window_count=8):
-    hollow_cylinder(cx, cz, GROUND_Y, wall_top, r, wall_mat, thickness=1)
+def tower(cx, cz, r, wall_top, roof_h, roof_mats, floors=(), windows_ys=None,
+          window_count=8, base_y=GROUND_Y, spire=False):
+    hollow_cylinder(cx, cz, base_y, wall_top, r, wall_mat, thickness=1)
     if windows_ys is None:
-        windows_ys = [wall_top - 6, wall_top - 14]
+        windows_ys = [wall_top - 6, wall_top - 14, wall_top - 22]
     for wy in windows_ys:
-        if wy - 1 <= GROUND_Y:
+        if wy - 1 <= base_y:
             continue
         for i in range(window_count):
             carve_slit(cx, cz, r, i * (360 / window_count), wy, wy + 1)
@@ -199,100 +189,179 @@ def tower(cx, cz, r, wall_top, roof_h, roof_mats, floors=(), windows_ys=None, wi
     for fy in floors:
         disk(cx, cz, fy, r - 1, "minecraft:spruce_planks")
     cone_roof(cx, cz, wall_top + 2, r, roof_h, roof_mats)
+    if spire:
+        tip = wall_top + 2 + roof_h
+        for i in range(3):
+            if 0 <= tip + i < HEIGHT:
+                b.set_block(cx, tip + i, cz, "minecraft:lightning_rod")
 
 
-# --------------------------------------------------------------- chateau
-print("Chateau : donjon central...")
-tower(CX, CZ, 13, GROUND_Y + 44, 16,
-      ["minecraft:dark_prismarine"] * 10 + ["minecraft:light_gray_concrete"] * 4 + ["minecraft:gray_concrete"] * 3,
-      floors=(GROUND_Y + 10, GROUND_Y + 20, GROUND_Y + 30, GROUND_Y + 40), window_count=10)
-flag(CX, GROUND_Y + 44 + 17, CZ, "minecraft:blue_wool")
-print("  blocs:", len(b.blocks))
-
-print("Chateau : tours d'angle...")
-corner_r = 27
-corner_towers = []
-for dx, dz in [(-1, -1), (1, -1), (-1, 1), (1, 1)]:
-    tx = CX + dx * corner_r
-    tz = CZ + dz * corner_r
-    corner_towers.append((tx, tz))
-    tower(tx, tz, 7, GROUND_Y + 28, 10,
-          ["minecraft:dark_prismarine"] * 6 + ["minecraft:light_gray_concrete"] * 3,
-          floors=(GROUND_Y + 13,), window_count=6)
-    flag(tx, GROUND_Y + 28 + 11, tz, "minecraft:blue_wool")
-print("  blocs:", len(b.blocks))
-
-print("Chateau : courtines...")
-wall_top = GROUND_Y + 13
-
-
-def crenelated_wall(x0, z0, x1, z1, top_y):
+def crenelated_wall(x0, z0, x1, z1, top_y, base_y=GROUND_Y):
     length = max(abs(x1 - x0), abs(z1 - z0))
     for i in range(length + 1):
         t = i / max(1, length)
         x = round(x0 + (x1 - x0) * t)
         z = round(z0 + (z1 - z0) * t)
-        for y in range(GROUND_Y, top_y + 1):
+        for y in range(base_y, top_y + 1):
             b.set_block(x, y, z, wall_mat(x, y, z))
         if i % 2 == 0:
             b.set_block(x, top_y + 1, z, "minecraft:stone_brick_wall")
         if i % 6 == 3:
-            for wy in (GROUND_Y + 5, GROUND_Y + 6):
+            for wy in (base_y + 5, base_y + 6):
                 b.blocks.pop((x, wy, z), None)
+    return length
 
 
-pts = [
-    (CX - corner_r, CZ - corner_r), (CX + corner_r, CZ - corner_r),
-    (CX + corner_r, CZ + corner_r), (CX - corner_r, CZ + corner_r),
-    (CX - corner_r, CZ - corner_r),
-]
-GATE_HALF = 4
-for i in range(len(pts) - 1):
-    x0, z0 = pts[i]
-    x1, z1 = pts[i + 1]
-    if z0 == z1 and z0 == CZ + corner_r:
-        crenelated_wall(x0, z0, CX - GATE_HALF - 3, z1, wall_top)
-        crenelated_wall(CX + GATE_HALF + 3, z0, x1, z1, wall_top)
-    else:
-        crenelated_wall(x0, z0, x1, z1, wall_top)
+# =========================================================== LE CHATEAU
+MOTTE_R = 15
+KEEP_BASE = GROUND_Y + 6
+INNER_R = 24
+OUTER_R = 47
+
+print("Motte (butte du donjon)...")
+for i in range(6):
+    y = GROUND_Y + 1 + i
+    r = MOTTE_R - i
+    mat = "minecraft:coarse_dirt" if i < 4 else "minecraft:grass_block" if i == 5 else "minecraft:podzol"
+    disk(CX, CZ, y, max(1, r), mat)
 print("  blocs:", len(b.blocks))
 
-# porte principale : barbacane avec 2 tours jumelles
-print("Chateau : porche + tours jumelles...")
-gate_z = CZ + corner_r
-for gx in (CX - GATE_HALF - 3, CX + GATE_HALF + 3):
-    tower(gx, gate_z, 4, GROUND_Y + 20, 7,
-          ["minecraft:dark_prismarine"] * 4 + ["minecraft:light_gray_concrete"] * 2,
-          floors=(), window_count=4)
-box_shell(CX - GATE_HALF - 1, GROUND_Y, gate_z - 3, CX + GATE_HALF + 1, GROUND_Y + 15, gate_z + 3,
-          "minecraft:stone_bricks", skip_top=False)
-for x in range(CX - GATE_HALF, CX + GATE_HALF + 1):
-    for y in range(GROUND_Y, GROUND_Y + 6):
-        b.set_block(x, y, gate_z - 3, "minecraft:air")
-        b.set_block(x, y, gate_z, "minecraft:air")
-        b.set_block(x, y, gate_z + 3, "minecraft:air")
-for x in range(CX - GATE_HALF + 1, CX + GATE_HALF):
-    b.set_block(x, GROUND_Y + 5, gate_z, "minecraft:iron_bars")
-    b.set_block(x, GROUND_Y + 4, gate_z, "minecraft:iron_bars")
-for y in (GROUND_Y + 1, GROUND_Y + 2):
-    b.set_block(CX - GATE_HALF, y, gate_z - 3, "minecraft:torch")
-    b.set_block(CX + GATE_HALF, y, gate_z - 3, "minecraft:torch")
-for x in (CX - GATE_HALF - 3, CX + GATE_HALF + 3):
-    for y in range(GROUND_Y + 3, GROUND_Y + 6):
+print("Grand escalier d'acces au donjon (face sud)...")
+for step in range(7):
+    y = GROUND_Y + step
+    outer_z = MOTTE_R + 3 - step * 2
+    for x in range(CX - 3, CX + 4):
+        b.set_block(x, y, CZ + outer_z, "minecraft:stone_brick_slab")
+        b.set_block(x, y - 1, CZ + outer_z, "minecraft:stone_bricks")
+    for x in (CX - 4, CX + 4):
+        for yy in range(y, y + 2):
+            b.set_block(x, yy, CZ + outer_z, "minecraft:stone_brick_wall")
+print("  blocs:", len(b.blocks))
+
+print("Donjon (tour maitresse)...")
+tower(CX, CZ, 13, KEEP_BASE + 34, 16,
+      ["minecraft:dark_prismarine"] * 10 + ["minecraft:light_gray_concrete"] * 4 + ["minecraft:gray_concrete"] * 3,
+      floors=(KEEP_BASE + 8, KEEP_BASE + 16, KEEP_BASE + 24), window_count=10,
+      base_y=KEEP_BASE, spire=True)
+buttresses(CX, CZ, 13, KEEP_BASE, KEEP_BASE + 28, count=8)
+flag(CX, KEEP_BASE + 34 + 20, CZ, "minecraft:blue_wool")
+print("  blocs:", len(b.blocks))
+
+print("Enceinte interieure (autour de la motte)...")
+inner_top = GROUND_Y + 9
+INNER_GATE_HALF = 3
+inner_pts = [
+    (CX - INNER_R, CZ - INNER_R), (CX + INNER_R, CZ - INNER_R),
+    (CX + INNER_R, CZ + INNER_R), (CX - INNER_R, CZ + INNER_R),
+    (CX - INNER_R, CZ - INNER_R),
+]
+for i in range(len(inner_pts) - 1):
+    x0, z0 = inner_pts[i]
+    x1, z1 = inner_pts[i + 1]
+    if z0 == z1 and z0 == CZ + INNER_R:
+        crenelated_wall(x0, z0, CX - INNER_GATE_HALF, z1, inner_top)
+        crenelated_wall(CX + INNER_GATE_HALF, z0, x1, z1, inner_top)
+    else:
+        crenelated_wall(x0, z0, x1, z1, inner_top)
+for dx, dz in [(-1, -1), (1, -1), (-1, 1), (1, 1)]:
+    tower(CX + dx * INNER_R, CZ + dz * INNER_R, 4, GROUND_Y + 15, 6,
+          ["minecraft:stone_bricks"] * 4 + ["minecraft:andesite"] * 2, window_count=4)
+print("  blocs:", len(b.blocks))
+
+print("Enceinte exterieure : tours d'angle...")
+corner_towers = []
+for dx, dz in [(-1, -1), (1, -1), (-1, 1), (1, 1)]:
+    tx = CX + dx * OUTER_R
+    tz = CZ + dz * OUTER_R
+    corner_towers.append((tx, tz))
+    tower(tx, tz, 8, GROUND_Y + 30, 11,
+          ["minecraft:dark_prismarine"] * 6 + ["minecraft:light_gray_concrete"] * 3,
+          floors=(GROUND_Y + 13, GROUND_Y + 22), window_count=6, spire=True)
+    buttresses(tx, tz, 8, GROUND_Y, GROUND_Y + 20, count=6)
+    flag(tx, GROUND_Y + 30 + 12, tz, "minecraft:blue_wool")
+print("  blocs:", len(b.blocks))
+
+print("Enceinte exterieure : tours de flanquement (milieu des courtines)...")
+watchtowers = []
+for ang_deg, skip in [(0, False), (90, False), (180, False), (270, True)]:
+    t = math.radians(ang_deg)
+    wx = CX + round(OUTER_R * math.cos(t))
+    wz = CZ + round(OUTER_R * math.sin(t))
+    if skip:
+        continue
+    watchtowers.append((wx, wz))
+    tower(wx, wz, 5, GROUND_Y + 22, 8,
+          ["minecraft:stone_bricks"] * 5 + ["minecraft:andesite"] * 2, window_count=5)
+    flag(wx, GROUND_Y + 22 + 9, wz, "minecraft:red_wool")
+print("  blocs:", len(b.blocks))
+
+print("Enceinte exterieure : courtines...")
+outer_top = GROUND_Y + 14
+outer_pts = [
+    (CX - OUTER_R, CZ - OUTER_R), (CX + OUTER_R, CZ - OUTER_R),
+    (CX + OUTER_R, CZ + OUTER_R), (CX - OUTER_R, CZ + OUTER_R),
+    (CX - OUTER_R, CZ - OUTER_R),
+]
+OUTER_GATE_HALF = 4
+for i in range(len(outer_pts) - 1):
+    x0, z0 = outer_pts[i]
+    x1, z1 = outer_pts[i + 1]
+    if z0 == z1 and z0 == CZ + OUTER_R:
+        crenelated_wall(x0, z0, CX - OUTER_GATE_HALF - 4, z1, outer_top)
+        crenelated_wall(CX + OUTER_GATE_HALF + 4, z0, x1, z1, outer_top)
+    else:
+        crenelated_wall(x0, z0, x1, z1, outer_top)
+print("  blocs:", len(b.blocks))
+
+print("Barbacane (double porte + tours jumelles + herse)...")
+gate_z = CZ + OUTER_R
+
+
+def gatehouse(gz, gate_half, wall_top, twin_r, twin_top):
+    for gx in (CX - gate_half - 4, CX + gate_half + 4):
+        tower(gx, gz, twin_r, twin_top, 7,
+              ["minecraft:dark_prismarine"] * 4 + ["minecraft:light_gray_concrete"] * 2, window_count=4)
+    box_shell(CX - gate_half - 2, GROUND_Y, gz - 3, CX + gate_half + 2, wall_top + 2, gz + 3,
+              "minecraft:stone_bricks", skip_top=False)
+    for x in range(CX - gate_half, CX + gate_half + 1):
+        for y in range(GROUND_Y, GROUND_Y + 6):
+            b.set_block(x, y, gz - 3, "minecraft:air")
+            b.set_block(x, y, gz, "minecraft:air")
+            b.set_block(x, y, gz + 3, "minecraft:air")
+    for x in range(CX - gate_half + 1, CX + gate_half):
+        b.set_block(x, GROUND_Y + 5, gz, "minecraft:iron_bars")
+        b.set_block(x, GROUND_Y + 4, gz, "minecraft:iron_bars")
+        b.blocks.pop((x, GROUND_Y + 6, gz - 1), None)
+        b.blocks.pop((x, GROUND_Y + 6, gz + 1), None)
+    for y in (GROUND_Y + 1, GROUND_Y + 2):
+        b.set_block(CX - gate_half, y, gz - 3, "minecraft:torch")
+        b.set_block(CX + gate_half, y, gz - 3, "minecraft:torch")
+        b.set_block(CX - gate_half, y, gz + 3, "minecraft:torch")
+        b.set_block(CX + gate_half, y, gz + 3, "minecraft:torch")
+
+
+gatehouse(gate_z, OUTER_GATE_HALF, outer_top, 5, GROUND_Y + 21)
+for x in (CX - OUTER_GATE_HALF - 4, CX + OUTER_GATE_HALF + 4):
+    for y in range(GROUND_Y + 3, GROUND_Y + 7):
         b.set_block(x, y, gate_z - 2, "minecraft:chain")
-flag(CX - GATE_HALF - 3, GROUND_Y + 20 + 8, gate_z, "minecraft:red_wool")
-flag(CX + GATE_HALF + 3, GROUND_Y + 20 + 8, gate_z, "minecraft:red_wool")
+    flag(x, GROUND_Y + 21 + 8, gate_z, "minecraft:red_wool")
+# statues (piliers) flanquant l'entree, au bord du pont
+for sx in (CX - OUTER_GATE_HALF - 1, CX + OUTER_GATE_HALF + 1):
+    sz = gate_z - 9
+    for y in range(GROUND_Y, GROUND_Y + 4):
+        b.set_block(sx, y, sz, "minecraft:chiseled_stone_bricks")
+    b.set_block(sx, GROUND_Y + 4, sz, "minecraft:lantern")
 print("  blocs:", len(b.blocks))
 
 print("Ponts...")
-for z in range(gate_z - 8, gate_z + 4):
+for z in range(gate_z - 9, gate_z + 4):
     for x in range(CX - 3, CX + 4):
         b.set_block(x, GROUND_Y, z, "minecraft:oak_planks")
     for x in (CX - 3, CX + 3):
         b.set_block(x, GROUND_Y + 1, z, "minecraft:oak_fence")
 for (axis, sign) in [("z", -1), ("x", -1), ("x", 1)]:
     if axis == "z":
-        x0, z0 = CX, CZ + sign * corner_r
+        x0, z0 = CX, CZ + sign * OUTER_R
         for z in range(min(z0, z0 + sign * 8), max(z0, z0 + sign * 8) + 1):
             for x in range(CX - 2, CX + 3):
                 b.set_block(x, GROUND_Y, z, "minecraft:oak_planks")
@@ -300,7 +369,7 @@ for (axis, sign) in [("z", -1), ("x", -1), ("x", 1)]:
                 b.set_block(x, GROUND_Y + 1, z, "minecraft:oak_fence")
     else:
         z0 = CZ
-        x0 = CX + sign * corner_r
+        x0 = CX + sign * OUTER_R
         for x in range(min(x0, x0 + sign * 8), max(x0, x0 + sign * 8) + 1):
             for z in range(CZ - 2, CZ + 3):
                 b.set_block(x, GROUND_Y, z, "minecraft:oak_planks")
@@ -308,8 +377,39 @@ for (axis, sign) in [("z", -1), ("x", -1), ("x", 1)]:
                 b.set_block(x, GROUND_Y + 1, z, "minecraft:oak_fence")
 print("  blocs:", len(b.blocks))
 
+print("Douves...")
 
-# ------------------------------------------------------- stands (cour)
+
+def carve_moat(cx, cz, inner_r, outer_r):
+    inner2, outer2 = inner_r * inner_r, outer_r * outer_r
+    for x in range(max(0, cx - outer_r - 1), min(SIZE, cx + outer_r + 2)):
+        for z in range(max(0, cz - outer_r - 1), min(SIZE, cz + outer_r + 2)):
+            dx, dz = x - cx, z - cz
+            d2 = dx * dx + dz * dz
+            if inner2 <= d2 <= outer2:
+                for y in range(GROUND_Y - 4, GROUND_Y + 1):
+                    b.set_block(x, y, z, "minecraft:water")
+            if (outer2 < d2 <= (outer_r + 1) * (outer_r + 1)) or (
+                (inner_r - 1) * (inner_r - 1) <= d2 < inner2
+            ):
+                b.set_block(x, GROUND_Y, z, "minecraft:stone_brick_slab")
+
+
+carve_moat(CX, CZ, 76, 85)
+print("  blocs:", len(b.blocks))
+
+
+# ------------------------------------------------------- basse-cour (bailey)
+def rotate(lx, lz, rot):
+    if rot == 0:
+        return lx, lz
+    if rot == 90:
+        return -lz, lx
+    if rot == 180:
+        return -lx, -lz
+    return lz, -lx
+
+
 def stall(cx, cz, facing_dx, facing_dz, wood="oak", roof="minecraft:red_terracotta"):
     for x in range(cx - 1, cx + 2):
         for z in range(cz - 1, cz + 2):
@@ -324,23 +424,70 @@ def stall(cx, cz, facing_dx, facing_dz, wood="oak", roof="minecraft:red_terracot
         b.set_block(sign_x, GROUND_Y + 2, sign_z, f"minecraft:{wood}_sign")
 
 
-print("Stands + puits dans la cour...")
-stall_ring_r = 19
+def utility_building(cx, cz, rot, kind):
+    w, d, h = 7, 6, 4
+    for lx in range(-w // 2, w // 2 + 1):
+        for lz in range(-d // 2, d // 2 + 1):
+            x, z = rotate(lx, lz, rot)
+            b.set_block(x + cx, GROUND_Y + 1, z + cz, "minecraft:spruce_log" if abs(lx) == w // 2 and abs(lz) == d // 2 else "minecraft:oak_planks")
+    if kind == "forge":
+        for wy in range(GROUND_Y + 1, GROUND_Y + 1 + h):
+            for lx in range(-w // 2, w // 2 + 1):
+                for lz in (-d // 2, d // 2):
+                    x, z = rotate(lx, lz, rot)
+                    b.set_block(x + cx, wy, z + cz, "minecraft:cobblestone")
+            for lz in range(-d // 2, d // 2 + 1):
+                for lx in (-w // 2, w // 2):
+                    x, z = rotate(lx, lz, rot)
+                    b.set_block(x + cx, wy, z + cz, "minecraft:cobblestone")
+        x, z = rotate(0, 0, rot)
+        b.set_block(x + cx, GROUND_Y + 1, z + cz, "minecraft:furnace")
+        x, z = rotate(1, 0, rot)
+        b.set_block(x + cx, GROUND_Y + 1, z + cz, "minecraft:anvil")
+        x, z = rotate(0, 1, rot)
+        b.set_block(x + cx, GROUND_Y + 1, z + cz, "minecraft:campfire")
+        for i, lx in enumerate(range(-w // 2 - 1, w // 2 + 2)):
+            ry = GROUND_Y + 1 + h + min(i, w + 1 - i)
+            for lz in range(-d // 2 - 1, d // 2 + 2):
+                x, z = rotate(lx, lz, rot)
+                b.set_block(x + cx, ry, z + cz, "minecraft:cobblestone")
+    else:  # stable
+        for lx in (-w // 2, w // 2):
+            for lz in range(-d // 2, d // 2 + 1):
+                for wy in range(GROUND_Y + 1, GROUND_Y + 1 + h):
+                    x, z = rotate(lx, lz, rot)
+                    b.set_block(x + cx, wy, z + cz, "minecraft:spruce_fence" if wy < GROUND_Y + 3 else "minecraft:oak_planks")
+        for i, lx in enumerate(range(-w // 2 - 1, w // 2 + 2)):
+            ry = GROUND_Y + 1 + h + min(i, w + 1 - i)
+            for lz in range(-d // 2 - 1, d // 2 + 2):
+                x, z = rotate(lx, lz, rot)
+                b.set_block(x + cx, ry, z + cz, "minecraft:hay_block")
+        for hx_ in (-2, 0, 2):
+            x, z = rotate(hx_, 0, rot)
+            b.set_block(x + cx, GROUND_Y + 1, z + cz, "minecraft:hay_block")
+
+
+print("Basse-cour : stands, puits, forge, ecurie...")
+stall_ring_r = 33
 stall_defs = [
-    (0, "oak"), (30, "spruce"), (60, "oak"), (90, "birch"),
-    (120, "oak"), (150, "spruce"), (180, "oak"), (210, "birch"),
-    (240, "oak"), (270, "spruce"), (300, "oak"), (330, "birch"),
+    (10, "oak"), (35, "spruce"), (60, "birch"), (100, "oak"),
+    (125, "spruce"), (150, "birch"), (190, "oak"), (215, "spruce"),
+    (240, "birch"), (280, "oak"), (305, "spruce"), (330, "birch"),
 ]
 for ang, wood in stall_defs:
     t = math.radians(ang)
     sx = round(CX + stall_ring_r * math.cos(t))
     sz = round(CZ + stall_ring_r * math.sin(t))
     stall(sx, sz, round(math.cos(t)), round(math.sin(t)), wood=wood)
-well(CX, CZ - 6)
+well(CX + 32, CZ - 10)
+utility_building(CX - 32, CZ - 15, 90, "forge")
+utility_building(CX - 32, CZ + 12, 90, "stable")
 print("  blocs:", len(b.blocks))
 
 
-# --------------------------------------------------------------- village
+# ================================================================ village
+
+
 HOUSE_VARIANTS = [
     dict(w=6, d=6, h=4, wall="minecraft:oak_planks", corner="minecraft:oak_log",
          roofblock="minecraft:oak_planks", two_story=False),
@@ -359,17 +506,7 @@ HOUSE_VARIANTS = [
 ]
 
 
-def rotate(lx, lz, rot):
-    if rot == 0:
-        return lx, lz
-    if rot == 90:
-        return -lz, lx
-    if rot == 180:
-        return -lx, -lz
-    return lz, -lx
-
-
-def house(cx, cz, rot, variant, garden_side=1):
+def house(cx, cz, rot, variant):
     v = HOUSE_VARIANTS[variant]
     w, d, h = v["w"], v["d"], v["h"]
     wall, corner, roofblock = v["wall"], v["corner"], v["roofblock"]
@@ -381,7 +518,6 @@ def house(cx, cz, rot, variant, garden_side=1):
             x, z = rotate(lx, lz, rot)
             b.set_block(x + cx, GROUND_Y + 1, z + cz, corner if is_corner else "minecraft:oak_planks")
 
-    floor_h = h if stories == 1 else h // 2 + 1
     total_h = h if stories == 1 else h + 3
     for wy in range(GROUND_Y + 1, GROUND_Y + 1 + total_h):
         band = wy - (GROUND_Y + 1)
@@ -420,10 +556,7 @@ def house(cx, cz, rot, variant, garden_side=1):
     b.set_block(cx_ + cx, GROUND_Y + total_h, cz_ + cz, "minecraft:cobblestone")
     b.set_block(cx_ + cx, GROUND_Y + total_h + 1, cz_ + cz, "minecraft:campfire")
 
-    # petit jardin cloture a l'arriere
-    gx0, gz0 = rotate(-w // 2 - 1, -d // 2 - 1, rot)
-    gx1, gz1 = rotate(w // 2 + 1, -d // 2 - 3, rot)
-    for lx in range(min(-w // 2 - 1, -w // 2 - 1), w // 2 + 2):
+    for lx in range(-w // 2 - 1, w // 2 + 2):
         for lz in range(-d // 2 - 3, -d // 2 - 1 + 1):
             x, z = rotate(lx, lz, rot)
             edge = lz == -d // 2 - 3 or lx in (-w // 2 - 1, w // 2 + 1)
@@ -471,7 +604,7 @@ def landmark(cx, cz, rot, kind):
     x, z = rotate(0, d // 2 + 1, rot)
     b.set_block(x + cx, GROUND_Y + 1, z + cz, "minecraft:oak_door")
     x, z = rotate(0, d // 2 + 3, rot)
-    b.set_block(x + cx, GROUND_Y + 2, z + cz, f"minecraft:oak_sign")
+    b.set_block(x + cx, GROUND_Y + 2, z + cz, "minecraft:oak_sign")
     if kind == "chapel":
         cxp, czp = rotate(0, -d // 2, rot)
         for i in range(4):
@@ -480,12 +613,12 @@ def landmark(cx, cz, rot, kind):
 
 
 print("Village : rues concentriques + maisons + jardins...")
-occupied = list(corner_towers) + [(CX, CZ)]
+occupied = list(corner_towers) + list(watchtowers) + [(CX, CZ)]
 houses_built = 0
-ring_radii = [58, 90, 125, 162, 200, 235]
+ring_radii = [100, 128, 158, 190, 218, 235]
 for ridx, ring_r in enumerate(ring_radii):
     circumference = 2 * math.pi * ring_r
-    spacing = 17 if ring_r < 150 else 15
+    spacing = 17 if ring_r < 190 else 15
     n = max(6, int(circumference / spacing))
     offset = rng.uniform(0, 2 * math.pi / n)
     for i in range(n):
@@ -507,7 +640,6 @@ for ridx, ring_r in enumerate(ring_radii):
         houses_built += 1
     print(f"  anneau r={ring_r}: {n} emplacements, total maisons={houses_built}, blocs={len(b.blocks)}")
 
-# rues radiales (8 directions) reliant les anneaux
 print("Rues radiales...")
 
 
@@ -526,8 +658,8 @@ def path_line(x0, z0, x1, z1, width=3, name="minecraft:polished_andesite"):
 
 for deg in range(0, 360, 45):
     t = math.radians(deg)
-    x0 = CX + round((corner_r + 8) * math.cos(t) * 1.3)
-    z0 = CZ + round((corner_r + 8) * math.sin(t) * 1.3)
+    x0 = CX + round((OUTER_R + 10) * math.cos(t) * 1.3)
+    z0 = CZ + round((OUTER_R + 10) * math.sin(t) * 1.3)
     x1 = CX + round(240 * math.cos(t))
     z1 = CZ + round(240 * math.sin(t))
     path_line(x0, z0, x1, z1, width=5 if deg % 90 == 0 else 4)
@@ -545,14 +677,13 @@ for ring_r in ring_radii:
 print("  blocs:", len(b.blocks))
 
 print("Batiments-reperes...")
-landmark(CX, CZ + 55, 0, "tavern")
-occupied.append((CX, CZ + 55))
-landmark(CX - 55, CZ, 90, "chapel")
-occupied.append((CX - 55, CZ))
+landmark(CX, CZ + 100, 0, "tavern")
+occupied.append((CX, CZ + 100))
+landmark(CX - 100, CZ, 90, "chapel")
+occupied.append((CX - 100, CZ))
 print("  blocs:", len(b.blocks))
 
 
-# ------------------------------------------------------------------ champs
 def field(cx, cz, w, d, crop):
     for lx in range(-w // 2, w // 2 + 1):
         for lz in range(-d // 2, d // 2 + 1):
@@ -567,10 +698,10 @@ def field(cx, cz, w, d, crop):
 
 print("Champs cultives...")
 field_spots = [
-    (CX + 210, CZ - 60, "minecraft:wheat"),
-    (CX + 195, CZ + 40, "minecraft:carrots"),
-    (CX - 40, CZ - 215, "minecraft:potatoes"),
-    (CX + 40, CZ - 200, "minecraft:wheat"),
+    (70, 70, "minecraft:wheat"),
+    (SIZE - 70, 70, "minecraft:carrots"),
+    (70, SIZE - 70, "minecraft:potatoes"),
+    (SIZE - 70, SIZE - 70, "minecraft:wheat"),
 ]
 for fx, fz, crop in field_spots:
     if any((fx - ox) ** 2 + (fz - oz) ** 2 < 15 ** 2 for ox, oz in occupied):
@@ -580,7 +711,7 @@ print("  blocs:", len(b.blocks))
 
 
 # ------------------------------------------------------------------ lac
-LAKE_X, LAKE_Z = CX - 155, CZ + 155
+LAKE_X, LAKE_Z = CX - 165, CZ + 165
 LAKE_R = 27
 print("Lac + cascade...")
 for x in range(LAKE_X - LAKE_R - 2, LAKE_X + LAKE_R + 3):
@@ -606,7 +737,7 @@ for z in range(hill_z + 5, hill_z + 5 + 10):
         b.set_block(x, GROUND_Y, z, "minecraft:spruce_planks")
     for x in (hill_x - 2, hill_x + 2):
         b.set_block(x, GROUND_Y + 1, z, "minecraft:spruce_fence")
-path_line(hill_x, hill_z - LAKE_R - 2, CX - 90, CZ + 120, width=3)
+path_line(hill_x, hill_z - LAKE_R - 2, CX - 100, CZ + 130, width=3)
 
 
 # ------------------------------------------------------------------ arbres
@@ -628,7 +759,7 @@ placed_trees = []
 while tcount < 90 and attempts < 5000:
     attempts += 1
     ang = rng.uniform(0, 2 * math.pi)
-    r = rng.uniform(55, 245)
+    r = rng.uniform(90, 245)
     tx = round(CX + r * math.cos(ang))
     tz = round(CZ + r * math.sin(ang))
     if not (5 <= tx < SIZE - 5 and 5 <= tz < SIZE - 5):
@@ -643,6 +774,95 @@ while tcount < 90 and attempts < 5000:
     placed_trees.append((tx, tz))
     tcount += 1
 print(f"  {tcount} arbres, blocs:", len(b.blocks))
+
+
+# =============================================================== DECOR
+def lamp_post(x, z, h=4):
+    if not in_bounds(x, z):
+        return
+    for i in range(h):
+        b.set_block(x, GROUND_Y + 1 + i, z, "minecraft:cobblestone_wall" if i == 0 else "minecraft:oak_fence")
+    b.set_block(x, GROUND_Y + 1 + h, z, "minecraft:lantern")
+
+
+def bush(x, z):
+    if not in_bounds(x, z):
+        return
+    b.set_block(x, GROUND_Y + 1, z, "minecraft:oak_leaves")
+
+
+def flower_patch(x, z):
+    flowers = ["minecraft:poppy", "minecraft:dandelion", "minecraft:cornflower",
+               "minecraft:blue_orchid", "minecraft:azure_bluet"]
+    for dx in range(-1, 2):
+        for dz in range(-1, 2):
+            if rng.random() < 0.55 and in_bounds(x + dx, z + dz):
+                b.set_block(x + dx, GROUND_Y + 1, z + dz, rng.choice(flowers))
+
+
+def bench(x, z, rot):
+    for lx, name in [(-1, "minecraft:oak_stairs"), (1, "minecraft:oak_stairs")]:
+        lx2, lz2 = rotate(lx, 0, rot)
+        b.set_block(x + lx2, GROUND_Y + 1, z + lz2, name)
+    b.set_block(x, GROUND_Y + 1, z, "minecraft:oak_slab")
+
+
+print("Decor : lampadaires le long des avenues...")
+lamp_count = 0
+for deg in range(0, 360, 45):
+    t = math.radians(deg)
+    perp = math.radians(deg + 90)
+    for r in range(OUTER_R + 25, 235, 22):
+        side = 1 if (r // 22) % 2 == 0 else -1
+        x = round(CX + r * math.cos(t) + side * 4 * math.cos(perp))
+        z = round(CZ + r * math.sin(t) + side * 4 * math.sin(perp))
+        lamp_post(x, z)
+        lamp_count += 1
+print("  blocs:", len(b.blocks))
+
+print("Decor : lampadaires le long des anneaux...")
+for ring_r in ring_radii:
+    n = max(10, int(2 * math.pi * ring_r / 26))
+    for i in range(n):
+        t = 2 * math.pi * i / n
+        x = round(CX + (ring_r + 4) * math.cos(t))
+        z = round(CZ + (ring_r + 4) * math.sin(t))
+        if any((x - ox) ** 2 + (z - oz) ** 2 < 6 ** 2 for ox, oz in occupied):
+            continue
+        lamp_post(x, z)
+        lamp_count += 1
+print(f"  {lamp_count} lampadaires, blocs:", len(b.blocks))
+
+print("Decor : buissons, fleurs, bancs...")
+deco_count = 0
+attempts = 0
+placed_deco = []
+while deco_count < 260 and attempts < 9000:
+    attempts += 1
+    ang = rng.uniform(0, 2 * math.pi)
+    r = rng.uniform(60, 245)
+    dx_ = round(CX + r * math.cos(ang))
+    dz_ = round(CZ + r * math.sin(ang))
+    if not (4 <= dx_ < SIZE - 4 and 4 <= dz_ < SIZE - 4):
+        continue
+    if any((dx_ - ox) ** 2 + (dz_ - oz) ** 2 < 9 ** 2 for ox, oz in occupied):
+        continue
+    if any((dx_ - ox) ** 2 + (dz_ - oz) ** 2 < 6 ** 2 for ox, oz in placed_trees):
+        continue
+    if any((dx_ - ox) ** 2 + (dz_ - oz) ** 2 < 4 ** 2 for ox, oz in placed_deco):
+        continue
+    if (dx_ - LAKE_X) ** 2 + (dz_ - LAKE_Z) ** 2 < (LAKE_R + 5) ** 2:
+        continue
+    kind = rng.random()
+    if kind < 0.45:
+        flower_patch(dx_, dz_)
+    elif kind < 0.8:
+        bush(dx_, dz_)
+    else:
+        bench(dx_, dz_, rng.choice([0, 90, 180, 270]))
+    placed_deco.append((dx_, dz_))
+    deco_count += 1
+print(f"  {deco_count} elements de decor, blocs:", len(b.blocks))
 
 print("Total final:", len(b.blocks), "blocs,", len(b.palette), "etats de palette")
 
