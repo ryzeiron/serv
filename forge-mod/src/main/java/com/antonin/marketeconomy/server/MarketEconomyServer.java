@@ -2,6 +2,8 @@ package com.antonin.marketeconomy.server;
 
 import com.antonin.marketeconomy.economy.BankManager;
 import com.antonin.marketeconomy.economy.EconomyManager;
+import com.antonin.marketeconomy.hacker.HackerAbilityService;
+import com.antonin.marketeconomy.job.JobManager;
 import com.antonin.marketeconomy.market.MarketManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
@@ -15,12 +17,16 @@ public class MarketEconomyServer {
     private final EconomyManager economyManager;
     private final BankManager bankManager;
     private final MarketManager marketManager;
+    private final JobManager jobManager;
+    private final HackerAbilityService hackerAbilityService;
 
     private MarketEconomyServer(MinecraftServer server) {
         var dataDir = server.getWorldPath(LevelResource.ROOT).resolve("marketeconomy");
         this.economyManager = new EconomyManager(dataDir.resolve("economy.json"));
         this.bankManager = new BankManager(dataDir.resolve("banks.json"));
-        this.marketManager = new MarketManager();
+        this.marketManager = new MarketManager(this.economyManager);
+        this.jobManager = new JobManager(dataDir.resolve("jobs.json"));
+        this.hackerAbilityService = new HackerAbilityService(this.jobManager, this.marketManager, this.economyManager, this.bankManager);
     }
 
     public static void start(MinecraftServer server) {
@@ -33,6 +39,7 @@ public class MarketEconomyServer {
         }
         instance.economyManager.save();
         instance.bankManager.save();
+        instance.jobManager.save();
         instance = null;
     }
 
@@ -50,5 +57,13 @@ public class MarketEconomyServer {
 
     public MarketManager getMarketManager() {
         return this.marketManager;
+    }
+
+    public JobManager getJobManager() {
+        return this.jobManager;
+    }
+
+    public HackerAbilityService getHackerAbilityService() {
+        return this.hackerAbilityService;
     }
 }

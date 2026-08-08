@@ -1,6 +1,8 @@
 package com.antonin.marketeconomy.server;
 
 import com.antonin.marketeconomy.MarketEconomyMod;
+import com.antonin.marketeconomy.command.HackCommands;
+import com.antonin.marketeconomy.command.JobCommands;
 import com.antonin.marketeconomy.command.ModCommands;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
@@ -31,6 +33,8 @@ public final class ServerEvents {
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         ModCommands.register(event.getDispatcher(), event.getBuildContext());
+        JobCommands.register(event.getDispatcher());
+        HackCommands.register(event.getDispatcher());
     }
 
     @SubscribeEvent

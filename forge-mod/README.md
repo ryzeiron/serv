@@ -29,13 +29,37 @@ Vault) :
 - Recalcul des prix toutes les 60s (comme `price-update-interval` dans l'ancien
   config.yml), via le tick serveur.
 
-Pas encore portes dans cette phase (ils dependent de systemes pas encore reecrits, et
-seront ajoutes avec leurs propres phases) : detection de manipulation de marche, primes,
-ecoutes du metier Hacker, contrats a terme, journal boursier, menu GUI du marche.
+Phase 3 : systeme de metiers + capacites du Hacker (la raison d'etre de la detection de
+manipulation/primes/ecoutes laissee de cote en phase 2 — elles reviennent ici) :
 
-Tout le reste du plugin Paper (metiers Hacker/Mineur, mines, GUIs, HUD, structures de
-spawn/iles/PvP, reputation, PNJ marchands...) reste a reecrire dans ce mod — c'est un
-gros chantier qui sera fait par etapes.
+- `JobType` / `PlayerJob` / `JobManager` — Hacker (niveau max 10) et Mineur (niveau max
+  45), xp et niveaux persistes en JSON, memes formules que le plugin Paper.
+- `MarketManager` recupere la detection de manipulation de marche, les primes
+  (`/prime <joueur>`) et les ecoutes (wiretap) du Hacker.
+- `HackerAbilityService` : mêmes 5 capacites que le plugin Paper (`/hack market`,
+  `/hack price <item> <up|down>`, `/hack scramble`, `/hack wiretap <joueur>`,
+  `/hack banque <joueur>`), memes couts/cooldowns/formules par niveau.
+- `/metier` : choix de metier et affichage de la progression, avec des liens cliquables
+  dans le chat en attendant un vrai menu GUI.
+- Le bloc Ordinateur ouvre maintenant un "terminal" au clic droit : les capacites Hacker
+  s'affichent en liens cliquables (pré-remplissent la commande dans le chat).
+
+Pas encore porte : le mini-jeu de `/hack terminal` (grille de piratage contre du loot,
+necessite un vrai GUI graphique), les contrats a terme, le journal boursier, le metier
+Mineur (mines a paliers, xp par minerai — la prochaine phase logique), le menu GUI du
+marche.
+
+Deux points d'API Forge 1.21 recents utilises ici sans pouvoir etre compiles/verifies
+dans ce sandbox (a checker en premier en cas d'erreur de compilation) :
+- `OrdinateurBlock#useWithoutItem` (le clic droit sans item special sur un bloc a ete
+  scinde de `use()` vers `useWithoutItem`/`useItemOn` autour de la 1.20.5).
+- `TickEvent.ServerTickEvent` dans `ServerEvents` (event de tick historique de Forge,
+  verifier qu'il n'a pas ete remplace par un `ServerTickEvent.Post` dans le Forge exact
+  utilise).
+
+Tout le reste du plugin Paper (mines du Mineur, GUIs graphiques, HUD, structures de
+spawn/iles/PvP, reputation, PNJ marchands, contrats a terme, journal...) reste a
+reecrire dans ce mod — c'est un gros chantier qui sera fait par etapes.
 
 ## Build
 

@@ -84,7 +84,7 @@ public final class ModCommands {
             ctx.getSource().sendFailure(Component.literal("§cFonds insuffisants. Prix total: " + economy.format(total)));
             return 0;
         }
-        market.recordPurchase(marketItem, amount, total);
+        market.recordPurchase(player.getUUID(), marketItem, amount, total);
         player.getInventory().add(new ItemStack(item, amount));
         player.sendSystemMessage(Component.literal("§aAcheté " + amount + "x " + marketItem.getDisplayName()
                 + " pour " + economy.format(total)));
@@ -107,11 +107,12 @@ public final class ModCommands {
         int sellAmount = Math.min(amount, hand.getCount());
         double total = round2(marketItem.getSellPrice() * sellAmount);
         hand.shrink(sellAmount);
-        market.recordSale(marketItem, sellAmount, total);
+        market.recordSale(player.getUUID(), marketItem, sellAmount, total);
+        double net = market.applyBountyCut(player, total);
         EconomyManager economy = MarketEconomyServer.get().getEconomyManager();
-        economy.deposit(player.getUUID(), total);
+        economy.deposit(player.getUUID(), net);
         player.sendSystemMessage(Component.literal("§aVendu " + sellAmount + "x " + marketItem.getDisplayName()
-                + " pour " + economy.format(total)));
+                + " pour " + economy.format(net)));
         return 1;
     }
 

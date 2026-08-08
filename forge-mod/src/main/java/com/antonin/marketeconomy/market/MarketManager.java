@@ -1,21 +1,24 @@
 package com.antonin.marketeconomy.market;
 
+import com.antonin.marketeconomy.economy.EconomyManager;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.ForgeRegistries;
 
-// Moteur de prix offre/demande du marche. Version noyau du MarketManager du plugin Paper :
-// achat/vente, indice de marche et evenements krach/ruee. La manipulation de marche, les primes,
-// les ecoutes du metier Hacker, les contrats a terme et le journal boursier viendront avec les
-// prochaines etapes du portage (ils dependent de systemes pas encore reecrits en mod).
+// Moteur de prix offre/demande du marche, avec detection de manipulation, primes et ecoutes
+// (capacites du metier Hacker). Les contrats a terme et le journal boursier viendront avec
+// leurs propres phases.
 public class MarketManager {
     private static final int HISTORY_LENGTH = 50;
     private static final double SENSITIVITY = 0.02;
@@ -30,9 +33,18 @@ public class MarketManager {
     private static final double BOOM_SHOCK = 1.30;
     private static final double EVENT_VOLATILITY_MULTIPLIER = 2.0;
 
+    private static final boolean MANIPULATION_ENABLED = true;
+    private static final long MANIPULATION_MIN_VOLUME = 40L;
+    private static final double MANIPULATION_SHARE_THRESHOLD = 0.6;
+
+    private static final long BOUNTY_ELIGIBLE_MILLIS = 300_000L;
+    private static final double BOUNTY_CUT_SHARE = 0.10;
+    private static final long BOUNTY_DURATION_MILLIS = 1_200_000L;
+
     private final Map<Item, MarketItem> items = new LinkedHashMap<>();
     private final Random random = new Random();
     private MarketEvent activeEvent;
+    private final EconomyManager economyManager;
 
     private long totalBought = 0L;
     private long totalSold = 0L;
@@ -41,7 +53,16 @@ public class MarketManager {
     private double previousIndexValue = 1.0;
     private double lastIndexValue = 1.0;
 
-    public MarketManager() {
+    // --- detection de manipulation / primes / ecoutes ---
+    private final Map<UUID, Map<Item, long[]>> playerActivity = new HashMap<>();
+    private final Map<UUID, Long> bountyEligibleUntil = new HashMap<>();
+    private final Map<UUID, Bounty> activeBounties = new HashMap<>();
+    private final Map<UUID, Wiretap> activeWiretaps = new HashMap<>(); // cle = cible
+    private final Map<UUID, Long> wiretapTargetCooldownUntil = new HashMap<>();
+    private final Map<UUID, Long> traceImmuneUntil = new HashMap<>(); // cle = hacker
+
+    public MarketManager(EconomyManager economyManager) {
+        this.economyManager = economyManager;
         this.registerDefaultItems();
         this.lastIndexValue = this.computeIndex();
         this.previousIndexValue = this.lastIndexValue;
@@ -85,16 +106,25 @@ public class MarketManager {
         return this.activeEvent;
     }
 
-    public void recordPurchase(MarketItem item, long amount, double totalPrice) {
+    public void recordPurchase(UUID buyer, MarketItem item, long amount, double totalPrice) {
         item.registerBuy(amount);
         this.totalBought += amount;
         this.totalSpent += totalPrice;
+        this.trackPlayerActivity(buyer, item.getItem(), amount, 0L);
     }
 
-    public void recordSale(MarketItem item, long amount, double totalPrice) {
+    public void recordSale(UUID seller, MarketItem item, long amount, double totalPrice) {
         item.registerSell(amount);
         this.totalSold += amount;
         this.totalEarned += totalPrice;
+        this.trackPlayerActivity(seller, item.getItem(), 0L, amount);
+    }
+
+    private void trackPlayerActivity(UUID uuid, Item item, long bought, long sold) {
+        Map<Item, long[]> perItem = this.playerActivity.computeIfAbsent(uuid, u -> new HashMap<>());
+        long[] totals = perItem.computeIfAbsent(item, i -> new long[2]);
+        totals[0] += bought;
+        totals[1] += sold;
     }
 
     public long getTotalBought() {
@@ -142,12 +172,240 @@ public class MarketManager {
         return sum / this.items.size();
     }
 
+    // --- detection de manipulation ---
+
+    private void checkManipulation(MarketItem item, MinecraftServer server) {
+        if (!MANIPULATION_ENABLED) {
+            return;
+        }
+        long totalActivity = item.getRecentBought() + item.getRecentSold();
+        if (totalActivity < MANIPULATION_MIN_VOLUME) {
+            return;
+        }
+        Item vanillaItem = item.getItem();
+        for (Map.Entry<UUID, Map<Item, long[]>> entry : this.playerActivity.entrySet()) {
+            long[] playerTotals = entry.getValue().get(vanillaItem);
+            if (playerTotals == null) {
+                continue;
+            }
+            long playerAmount = playerTotals[0] + playerTotals[1];
+            double share = (double) playerAmount / (double) totalActivity;
+            if (share >= MANIPULATION_SHARE_THRESHOLD) {
+                this.flagManipulation(entry.getKey(), item, share, server);
+            }
+        }
+    }
+
+    // Ne bloque pas le trading : rend simplement le joueur "primable" pendant une fenetre de temps
+    private void flagManipulation(UUID uuid, MarketItem item, double share, MinecraftServer server) {
+        Long immuneUntil = this.traceImmuneUntil.get(uuid);
+        if (immuneUntil != null && immuneUntil > System.currentTimeMillis()) {
+            return;
+        }
+        this.bountyEligibleUntil.put(uuid, System.currentTimeMillis() + BOUNTY_ELIGIBLE_MILLIS);
+        ServerPlayer player = server.getPlayerList().getPlayer(uuid);
+        String name = player != null ? player.getGameProfile().getName() : "Un joueur";
+        broadcast(server, "§4[Marché] §cActivité suspecte détectée sur " + item.getDisplayName()
+                + " (" + Math.round(share * 100) + "% du volume) — " + name
+                + " peut être ciblé par une prime (§7/prime " + name + "§c) pendant "
+                + (BOUNTY_ELIGIBLE_MILLIS / 1000L) + "s.");
+        if (player != null) {
+            player.sendSystemMessage(Component.literal("§cTon activité sur le marché ressemble à de la manipulation de prix. "
+                    + "Les autres joueurs peuvent placer une prime sur toi pendant "
+                    + (BOUNTY_ELIGIBLE_MILLIS / 1000L) + "s."));
+        }
+    }
+
+    // --- primes ---
+
+    public boolean isBountyEligible(UUID uuid) {
+        Long until = this.bountyEligibleUntil.get(uuid);
+        return until != null && until > System.currentTimeMillis();
+    }
+
+    public Bounty getBounty(UUID targetUuid) {
+        return this.activeBounties.get(targetUuid);
+    }
+
+    // Place une prime sur "target" si elle est actuellement primable et pas deja ciblee ; renvoie
+    // un message d'erreur, ou null si la prime a bien ete posee
+    public String placeBounty(ServerPlayer placer, ServerPlayer target) {
+        if (placer.getUUID().equals(target.getUUID())) {
+            return "Tu ne peux pas placer une prime sur toi-même.";
+        }
+        if (!this.isBountyEligible(target.getUUID())) {
+            return target.getGameProfile().getName() + " n'est pas actuellement recherché pour manipulation de marché.";
+        }
+        if (this.activeBounties.containsKey(target.getUUID())) {
+            return "Un contrat est déjà actif sur " + target.getGameProfile().getName() + ".";
+        }
+        long expiresAt = System.currentTimeMillis() + BOUNTY_DURATION_MILLIS;
+        this.activeBounties.put(target.getUUID(), new Bounty(target.getUUID(), placer.getUUID(), BOUNTY_CUT_SHARE, expiresAt));
+        this.bountyEligibleUntil.remove(target.getUUID());
+        broadcast(placer.getServer(), "§4[Marché] §c" + placer.getGameProfile().getName()
+                + " place un contrat sur la tête de " + target.getGameProfile().getName()
+                + " ! " + Math.round(BOUNTY_CUT_SHARE * 100) + "% de ses ventes lui reviendront pendant "
+                + (BOUNTY_DURATION_MILLIS / 60_000L) + " min.");
+        return null;
+    }
+
+    // A appeler avant de crediter une vente : redirige la part de la prime puis celle d'une
+    // eventuelle ecoute (wiretap) de Hacker, et renvoie ce qu'il reste a verser au vendeur
+    public double applyBountyCut(ServerPlayer seller, double saleAmount) {
+        double remaining = saleAmount;
+
+        Bounty bounty = this.activeBounties.get(seller.getUUID());
+        if (bounty != null) {
+            double cut = remaining * bounty.getCutShare();
+            if (cut > 0.0) {
+                this.economyManager.deposit(bounty.getPlacer(), cut);
+                ServerPlayer onlinePlacer = seller.getServer().getPlayerList().getPlayer(bounty.getPlacer());
+                if (onlinePlacer != null) {
+                    onlinePlacer.sendSystemMessage(Component.literal("§6[Prime] §eTa cible " + seller.getGameProfile().getName()
+                            + " a vendu — tu touches " + this.economyManager.format(cut) + "."));
+                }
+            }
+            remaining -= cut;
+        }
+
+        remaining = this.applyWiretapCut(seller, remaining);
+        return remaining;
+    }
+
+    private double applyWiretapCut(ServerPlayer seller, double remaining) {
+        Wiretap wiretap = this.activeWiretaps.get(seller.getUUID());
+        if (wiretap == null) {
+            return remaining;
+        }
+        double cut = Math.round(remaining * wiretap.getCutShare() * 100.0) / 100.0;
+        if (cut <= 0.0) {
+            return remaining;
+        }
+        this.economyManager.deposit(wiretap.getHacker(), cut);
+        wiretap.addSkimmed(cut);
+        ServerPlayer hackerOnline = seller.getServer().getPlayerList().getPlayer(wiretap.getHacker());
+        if (hackerOnline != null) {
+            hackerOnline.sendSystemMessage(Component.literal("§5[Hack] §dInterception sur " + seller.getGameProfile().getName()
+                    + " : +" + this.economyManager.format(cut) + "."));
+        }
+        if (!wiretap.isCaught() && this.random.nextDouble() < wiretap.getCatchChance()) {
+            wiretap.setCaught(true);
+            String hackerName = hackerOnline != null ? hackerOnline.getGameProfile().getName() : "un joueur";
+            seller.sendSystemMessage(Component.literal("§c[!] Intrusion détectée sur tes ventes : " + hackerName
+                    + " t'espionnait ! Tu peux le signaler avec §7/prime " + hackerName));
+            this.bountyEligibleUntil.put(wiretap.getHacker(), System.currentTimeMillis() + BOUNTY_ELIGIBLE_MILLIS);
+            broadcast(seller.getServer(), "§4[Marché] §c" + hackerName + " a été repéré en train de pirater les ventes de "
+                    + seller.getGameProfile().getName() + " ! Une prime peut être placée (§7/prime " + hackerName + "§c).");
+        }
+        return remaining - cut;
+    }
+
+    // --- metier Hacker ---
+
+    // Pose une ecoute sur les ventes de "target" ; renvoie un message d'erreur, ou null si l'ecoute
+    // a bien ete posee
+    public String startWiretap(ServerPlayer hacker, ServerPlayer target, double cutShare, double catchChance,
+            long durationMillis, long targetCooldownMillis) {
+        if (hacker.getUUID().equals(target.getUUID())) {
+            return "Tu ne peux pas te pirater toi-même.";
+        }
+        Long targetCd = this.wiretapTargetCooldownUntil.get(target.getUUID());
+        if (targetCd != null && targetCd > System.currentTimeMillis()) {
+            return target.getGameProfile().getName() + " a été ciblé récemment, réessaie plus tard.";
+        }
+        if (this.activeWiretaps.containsKey(target.getUUID())) {
+            return target.getGameProfile().getName() + " est déjà sous écoute.";
+        }
+        long expiresAt = System.currentTimeMillis() + durationMillis;
+        this.activeWiretaps.put(target.getUUID(),
+                new Wiretap(target.getUUID(), hacker.getUUID(), cutShare, catchChance, expiresAt));
+        this.wiretapTargetCooldownUntil.put(target.getUUID(), expiresAt + targetCooldownMillis);
+        return null;
+    }
+
+    // Rend "hacker" temporairement invisible a la detection de manipulation de marche
+    public void scrambleTrace(UUID hacker, long durationMillis) {
+        this.traceImmuneUntil.put(hacker, System.currentTimeMillis() + durationMillis);
+    }
+
+    // Injecte une fausse activite massive sur "item" pour en pousser le prix (pump si up=true,
+    // sinon dump). Comme une vraie manipulation, ca peut declencher la detection au prochain tick
+    // sauf si la trace a ete brouillee juste avant
+    public void hackPrice(UUID hacker, MarketItem item, boolean up, long fakeVolume) {
+        if (up) {
+            item.registerBuy(fakeVolume);
+            this.totalBought += fakeVolume;
+        } else {
+            item.registerSell(fakeVolume);
+            this.totalSold += fakeVolume;
+        }
+        this.trackPlayerActivity(hacker, item.getItem(), up ? fakeVolume : 0L, up ? 0L : fakeVolume);
+    }
+
+    // "Vole" les infos d'initie sur un item : pression du cycle en cours (pas encore appliquee au
+    // prix) + evenement de marche en cours sur sa categorie
+    public String getInsiderReport(MarketItem item) {
+        long bought = item.getRecentBought();
+        long sold = item.getRecentSold();
+        long net = bought - sold;
+        String direction = net > 0 ? "§ahausse probable" : net < 0 ? "§cbaisse probable" : "§7stable";
+        boolean eventBrewing = this.activeEvent != null
+                && (this.activeEvent.getCategory() == null || this.activeEvent.getCategory() == item.getCategory());
+        StringBuilder sb = new StringBuilder();
+        sb.append("§5[Hack] §dRapport d'initié — §f").append(item.getDisplayName()).append("\n");
+        sb.append("§7Prix actuel: §f").append(this.economyManager.format(item.getCurrentPrice()))
+                .append(" §7| Tendance affichée: ").append(item.getTrendArrow()).append("\n");
+        sb.append("§7Pression du cycle en cours (pas encore visible publiquement): §f").append(bought)
+                .append(" achats / ").append(sold).append(" ventes → ").append(direction);
+        if (eventBrewing) {
+            sb.append("\n§c⚠ Un évènement de marché est actif sur cette catégorie.");
+        }
+        return sb.toString();
+    }
+
+    private void tickWiretaps(MinecraftServer server) {
+        if (this.activeWiretaps.isEmpty()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        this.activeWiretaps.entrySet().removeIf(entry -> {
+            Wiretap wiretap = entry.getValue();
+            if (!wiretap.isExpired(now)) {
+                return false;
+            }
+            ServerPlayer target = server.getPlayerList().getPlayer(wiretap.getTarget());
+            if (target != null && !wiretap.isCaught() && wiretap.getTotalSkimmed() > 0.0) {
+                target.sendSystemMessage(Component.literal("§7Tu remarques après coup une activité suspecte sur tes dernières ventes... (environ "
+                        + this.economyManager.format(wiretap.getTotalSkimmed())
+                        + " manquants, origine inconnue)"));
+            }
+            return true;
+        });
+    }
+
+    private void tickBounties(MinecraftServer server) {
+        if (this.activeBounties.isEmpty()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        this.activeBounties.entrySet().removeIf(entry -> {
+            if (!entry.getValue().isExpired(now)) {
+                return false;
+            }
+            ServerPlayer target = server.getPlayerList().getPlayer(entry.getKey());
+            String name = target != null ? target.getGameProfile().getName() : "un joueur recherché";
+            broadcast(server, "§6[Marché] §eLe contrat sur " + name + " a expiré.");
+            return true;
+        });
+    }
+
     public void recalculateAll(MinecraftServer server) {
         Map<MarketCategory, long[]> categoryTotals = new EnumMap<>(MarketCategory.class);
         for (MarketItem item : this.items.values()) {
             long[] totals = categoryTotals.computeIfAbsent(item.getCategory(), c -> new long[2]);
             totals[0] += item.getRecentBought();
             totals[1] += item.getRecentSold();
+            this.checkManipulation(item, server);
         }
 
         for (MarketItem item : this.items.values()) {
@@ -163,6 +421,9 @@ public class MarketManager {
         }
 
         this.tickEvent(server);
+        this.tickBounties(server);
+        this.tickWiretaps(server);
+        this.playerActivity.clear();
 
         this.previousIndexValue = this.lastIndexValue;
         this.lastIndexValue = this.computeIndex();
