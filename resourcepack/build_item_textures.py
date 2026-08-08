@@ -155,9 +155,54 @@ def build_computer_block():
     side.save(f"{BLOCK_DIR}/jukebox_side.png")
 
 
+# -------------------------------------------------- Ordinateur portable (bloc pose)
+def build_laptop_base():
+    case = (150, 152, 156, 255)
+    case_dark = (110, 112, 116, 255)
+    key = (95, 97, 102, 255)
+    key_dark = (70, 72, 76, 255)
+    trackpad = (170, 172, 176, 255)
+
+    img = Image.new("RGBA", (S, S), case)
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, S - 1, S - 1], outline=case_dark)
+    # grille de touches
+    for row in range(3):
+        for col in range(5):
+            x0 = 1 + col * 3
+            y0 = 1 + row * 3
+            d.rectangle([x0, y0, x0 + 2, y0 + 2], fill=key, outline=key_dark)
+    # trackpad
+    d.rectangle([5, 11, 10, 14], fill=trackpad, outline=case_dark)
+    img.save(f"{BLOCK_DIR}/laptop_base.png")
+
+
+def build_laptop_screen():
+    bezel = (58, 60, 65, 255)
+    bezel_dark = (35, 37, 40, 255)
+    screen = (16, 20, 28, 255)
+    text_green = (95, 235, 140, 255)
+    text_dim = (55, 150, 90, 255)
+    cam = (20, 20, 22, 255)
+
+    img = Image.new("RGBA", (S, S), bezel)
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, S - 1, S - 1], outline=bezel_dark)
+    d.point([(8, 1)], fill=cam)
+    d.rectangle([2, 2, 13, 13], fill=screen)
+    d.line([(3, 4), (10, 4)], fill=text_green)
+    d.line([(3, 6), (12, 6)], fill=text_dim)
+    d.line([(3, 8), (9, 8)], fill=text_dim)
+    d.line([(3, 10), (11, 10)], fill=text_dim)
+    d.line([(3, 12), (7, 12)], fill=text_green)
+    img.save(f"{BLOCK_DIR}/laptop_screen.png")
+
+
 build_lithium_ingot()
 build_plastic()
 build_computer_item()
 build_calcite_ore()
 build_computer_block()
+build_laptop_base()
+build_laptop_screen()
 print("textures generees")

@@ -1,0 +1,36 @@
+{
+  "textures": {
+    "particle": "block/jukebox_side",
+    "case": "block/jukebox_side",
+    "keys": "block/laptop_base",
+    "screen": "block/laptop_screen"
+  },
+  "elements": [
+    {
+      "name": "base",
+      "from": [1, 0, 1],
+      "to": [15, 2, 15],
+      "faces": {
+        "up":    { "uv": [0, 0, 16, 16], "texture": "#keys" },
+        "down":  { "uv": [0, 0, 16, 16], "texture": "#case" },
+        "north": { "uv": [0, 14, 16, 16], "texture": "#case" },
+        "south": { "uv": [0, 14, 16, 16], "texture": "#case" },
+        "east":  { "uv": [0, 14, 16, 16], "texture": "#case" },
+        "west":  { "uv": [0, 14, 16, 16], "texture": "#case" }
+      }
+    },
+    {
+      "name": "screen",
+      "from": [1, 2, 1],
+      "to": [15, 11, 3],
+      "faces": {
+        "up":    { "uv": [0, 0, 16, 2], "texture": "#case" },
+        "down":  { "uv": [0, 0, 16, 2], "texture": "#case" },
+        "north": { "uv": [0, 0, 16, 9], "texture": "#case" },
+        "south": { "uv": [0, 0, 16, 9], "texture": "#screen" },
+        "east":  { "uv": [0, 0, 2, 9], "texture": "#case" },
+        "west":  { "uv": [0, 0, 2, 9], "texture": "#case" }
+      }
+    }
+  ]
+}
