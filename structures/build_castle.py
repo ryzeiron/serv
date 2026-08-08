@@ -1,5 +1,5 @@
 """Genere spawn_castle.nbt : chateau fort moyen-age + village sur une
-plateforme de 500x500. Reutilise structure_lib (StructureBuilder eparse :
+plateforme de 350x350. Reutilise structure_lib (StructureBuilder eparse :
 seuls les blocs explicitement poses sont stockes -> pas de cout pour le
 vide) et l'approche "coques creuses" pour rester a une taille raisonnable.
 
@@ -17,7 +17,7 @@ import sys
 sys.path.insert(0, "/home/user/serv/structures")
 from structure_lib import StructureBuilder, verify
 
-SIZE = 500
+SIZE = 350
 HEIGHT = 100
 GROUND_Y = 20
 CX = SIZE // 2
@@ -53,7 +53,7 @@ def wall_mat(x, y, z):
 
 
 # ---------------------------------------------------------------- platform
-print("Plateforme (herbe pleine 500x500)...")
+print("Plateforme (herbe pleine 350x350)...")
 for x in range(SIZE):
     for z in range(SIZE):
         set_ground(x, z)
@@ -213,10 +213,12 @@ def crenelated_wall(x0, z0, x1, z1, top_y, base_y=GROUND_Y):
 
 
 # =========================================================== LE CHATEAU
-MOTTE_R = 15
+MOTTE_R = 11
 KEEP_BASE = GROUND_Y + 6
-INNER_R = 24
-OUTER_R = 47
+INNER_R = 17
+OUTER_R = 33
+MOAT_INNER = 58
+MOAT_OUTER = 66
 
 print("Motte (butte du donjon)...")
 for i in range(6):
@@ -395,7 +397,7 @@ def carve_moat(cx, cz, inner_r, outer_r):
                 b.set_block(x, GROUND_Y, z, "minecraft:stone_brick_slab")
 
 
-carve_moat(CX, CZ, 76, 85)
+carve_moat(CX, CZ, MOAT_INNER, MOAT_OUTER)
 print("  blocs:", len(b.blocks))
 
 
@@ -468,7 +470,7 @@ def utility_building(cx, cz, rot, kind):
 
 
 print("Basse-cour : stands, puits, forge, ecurie...")
-stall_ring_r = 33
+stall_ring_r = 23
 stall_defs = [
     (10, "oak"), (35, "spruce"), (60, "birch"), (100, "oak"),
     (125, "spruce"), (150, "birch"), (190, "oak"), (215, "spruce"),
@@ -479,9 +481,9 @@ for ang, wood in stall_defs:
     sx = round(CX + stall_ring_r * math.cos(t))
     sz = round(CZ + stall_ring_r * math.sin(t))
     stall(sx, sz, round(math.cos(t)), round(math.sin(t)), wood=wood)
-well(CX + 32, CZ - 10)
-utility_building(CX - 32, CZ - 15, 90, "forge")
-utility_building(CX - 32, CZ + 12, 90, "stable")
+well(CX + 22, CZ - 7)
+utility_building(CX - 22, CZ - 11, 90, "forge")
+utility_building(CX - 22, CZ + 8, 90, "stable")
 print("  blocs:", len(b.blocks))
 
 
@@ -615,10 +617,10 @@ def landmark(cx, cz, rot, kind):
 print("Village : rues concentriques + maisons + jardins...")
 occupied = list(corner_towers) + list(watchtowers) + [(CX, CZ)]
 houses_built = 0
-ring_radii = [100, 128, 158, 190, 218, 235]
+ring_radii = [80, 97, 113, 130, 146, 163]
 for ridx, ring_r in enumerate(ring_radii):
     circumference = 2 * math.pi * ring_r
-    spacing = 17 if ring_r < 190 else 15
+    spacing = 17 if ring_r < 133 else 15
     n = max(6, int(circumference / spacing))
     offset = rng.uniform(0, 2 * math.pi / n)
     for i in range(n):
@@ -660,8 +662,8 @@ for deg in range(0, 360, 45):
     t = math.radians(deg)
     x0 = CX + round((OUTER_R + 10) * math.cos(t) * 1.3)
     z0 = CZ + round((OUTER_R + 10) * math.sin(t) * 1.3)
-    x1 = CX + round(240 * math.cos(t))
-    z1 = CZ + round(240 * math.sin(t))
+    x1 = CX + round(168 * math.cos(t))
+    z1 = CZ + round(168 * math.sin(t))
     path_line(x0, z0, x1, z1, width=5 if deg % 90 == 0 else 4)
 
 for ring_r in ring_radii:
@@ -677,10 +679,10 @@ for ring_r in ring_radii:
 print("  blocs:", len(b.blocks))
 
 print("Batiments-reperes...")
-landmark(CX, CZ + 100, 0, "tavern")
-occupied.append((CX, CZ + 100))
-landmark(CX - 100, CZ, 90, "chapel")
-occupied.append((CX - 100, CZ))
+landmark(CX, CZ + 80, 0, "tavern")
+occupied.append((CX, CZ + 80))
+landmark(CX - 80, CZ, 90, "chapel")
+occupied.append((CX - 80, CZ))
 print("  blocs:", len(b.blocks))
 
 
@@ -698,10 +700,10 @@ def field(cx, cz, w, d, crop):
 
 print("Champs cultives...")
 field_spots = [
-    (70, 70, "minecraft:wheat"),
-    (SIZE - 70, 70, "minecraft:carrots"),
-    (70, SIZE - 70, "minecraft:potatoes"),
-    (SIZE - 70, SIZE - 70, "minecraft:wheat"),
+    (50, 50, "minecraft:wheat"),
+    (SIZE - 50, 50, "minecraft:carrots"),
+    (50, SIZE - 50, "minecraft:potatoes"),
+    (SIZE - 50, SIZE - 50, "minecraft:wheat"),
 ]
 for fx, fz, crop in field_spots:
     if any((fx - ox) ** 2 + (fz - oz) ** 2 < 15 ** 2 for ox, oz in occupied):
@@ -711,8 +713,8 @@ print("  blocs:", len(b.blocks))
 
 
 # ------------------------------------------------------------------ lac
-LAKE_X, LAKE_Z = CX - 165, CZ + 165
-LAKE_R = 27
+LAKE_X, LAKE_Z = CX - 105, CZ + 105
+LAKE_R = 19
 print("Lac + cascade...")
 for x in range(LAKE_X - LAKE_R - 2, LAKE_X + LAKE_R + 3):
     for z in range(LAKE_Z - LAKE_R - 2, LAKE_Z + LAKE_R + 3):
@@ -737,7 +739,7 @@ for z in range(hill_z + 5, hill_z + 5 + 10):
         b.set_block(x, GROUND_Y, z, "minecraft:spruce_planks")
     for x in (hill_x - 2, hill_x + 2):
         b.set_block(x, GROUND_Y + 1, z, "minecraft:spruce_fence")
-path_line(hill_x, hill_z - LAKE_R - 2, CX - 100, CZ + 130, width=3)
+path_line(hill_x, hill_z - LAKE_R - 2, CX - 55, CZ + 70, width=3)
 
 
 # ------------------------------------------------------------------ arbres
@@ -759,7 +761,9 @@ placed_trees = []
 while tcount < 90 and attempts < 5000:
     attempts += 1
     ang = rng.uniform(0, 2 * math.pi)
-    r = rng.uniform(90, 245)
+    r = rng.uniform(72, 160)
+    if MOAT_INNER - 2 <= r <= MOAT_OUTER + 2:
+        continue
     tx = round(CX + r * math.cos(ang))
     tz = round(CZ + r * math.sin(ang))
     if not (5 <= tx < SIZE - 5 and 5 <= tz < SIZE - 5):
@@ -812,7 +816,7 @@ lamp_count = 0
 for deg in range(0, 360, 45):
     t = math.radians(deg)
     perp = math.radians(deg + 90)
-    for r in range(OUTER_R + 25, 235, 22):
+    for r in range(OUTER_R + 35, 163, 22):
         side = 1 if (r // 22) % 2 == 0 else -1
         x = round(CX + r * math.cos(t) + side * 4 * math.cos(perp))
         z = round(CZ + r * math.sin(t) + side * 4 * math.sin(perp))
@@ -840,7 +844,9 @@ placed_deco = []
 while deco_count < 260 and attempts < 9000:
     attempts += 1
     ang = rng.uniform(0, 2 * math.pi)
-    r = rng.uniform(60, 245)
+    r = rng.uniform(45, 160)
+    if MOAT_INNER - 2 <= r <= MOAT_OUTER + 2:
+        continue
     dx_ = round(CX + r * math.cos(ang))
     dz_ = round(CZ + r * math.sin(ang))
     if not (4 <= dx_ < SIZE - 4 and 4 <= dz_ < SIZE - 4):
