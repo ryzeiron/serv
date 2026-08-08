@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " P ",
+    " L ",
+    "III"
+  ],
+  "key": {
+    "P": { "item": "marketeconomy:plastic" },
+    "L": { "item": "marketeconomy:lithium_ingot" },
+    "I": { "item": "minecraft:iron_block" }
+  },
+  "result": {
+    "id": "marketeconomy:ordinateur",
+    "count": 1
+  }
+}

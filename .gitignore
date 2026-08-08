@@ -4,3 +4,8 @@ target/
 *.iml
 .vscode/
 resourcepack/*.zip
+forge-mod/build/
+forge-mod/.gradle/
+forge-mod/run/
+forge-mod/logs/
+forge-mod/src/generated/

@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "marketeconomy:block/ordinateur" },
+    "facing=east":  { "model": "marketeconomy:block/ordinateur", "y": 90 },
+    "facing=south": { "model": "marketeconomy:block/ordinateur", "y": 180 },
+    "facing=west":  { "model": "marketeconomy:block/ordinateur", "y": 270 }
+  }
+}
