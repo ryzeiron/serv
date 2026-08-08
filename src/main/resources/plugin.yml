@@ -33,6 +33,27 @@ commands:
     description: Place une prime sur un joueur repere pour manipulation de marche
     usage: /prime <joueur>
     permission: marketeconomy.use
+  spawn:
+    description: Teleporte au spawn du serveur
+    usage: /spawn
+    permission: marketeconomy.use
+  pvp:
+    description: Teleporte sur l'ile PvP
+    usage: /pvp
+    permission: marketeconomy.use
+  ile:
+    description: Teleporte sur ton ile personnelle (la cree si besoin)
+    usage: /ile
+    aliases: [island]
+    permission: marketeconomy.use
+  sethub:
+    description: Enregistre ta position actuelle comme spawn du serveur
+    usage: /sethub
+    permission: marketeconomy.admin
+  setpvp:
+    description: Enregistre ta position actuelle comme ile PvP
+    usage: /setpvp
+    permission: marketeconomy.admin
   marketadmin:
     description: Commandes admin du marche (reset prix, ajout item)
     usage: /marketadmin <reset|additem|setprice> [args]

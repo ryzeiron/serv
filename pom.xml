@@ -64,9 +64,21 @@
                         <configuration>
                             <outputDirectory>${basedir}/target/classes</outputDirectory>
                             <resources>
+                                <!-- plugin.yml / config.yml : filtrage texte des variables Maven -->
                                 <resource>
                                     <directory>src/main/resources</directory>
                                     <filtering>true</filtering>
+                                    <excludes>
+                                        <exclude>structures/**</exclude>
+                                    </excludes>
+                                </resource>
+                                <!-- fichiers de structure NBT (binaires) : jamais de filtrage texte, ca les corromprait -->
+                                <resource>
+                                    <directory>src/main/resources</directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>structures/**</include>
+                                    </includes>
                                 </resource>
                             </resources>
                         </configuration>

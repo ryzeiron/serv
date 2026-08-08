@@ -3,10 +3,15 @@ package com.antonin.marketeconomy;
 import com.antonin.marketeconomy.MarketManager;
 import com.antonin.marketeconomy.commands.BuyCommand;
 import com.antonin.marketeconomy.commands.FuturesCommand;
+import com.antonin.marketeconomy.commands.IslandCommand;
 import com.antonin.marketeconomy.commands.JournalCommand;
 import com.antonin.marketeconomy.commands.MarketCommand;
 import com.antonin.marketeconomy.commands.PrimeCommand;
+import com.antonin.marketeconomy.commands.PvpCommand;
 import com.antonin.marketeconomy.commands.SellCommand;
+import com.antonin.marketeconomy.commands.SetHubCommand;
+import com.antonin.marketeconomy.commands.SetPvpCommand;
+import com.antonin.marketeconomy.commands.SpawnCommand;
 import com.antonin.marketeconomy.commands.SpecialItemCommand;
 import com.antonin.marketeconomy.gui.MarketGUIListener;
 import com.antonin.marketeconomy.gui.VillagerInteractionListener;
@@ -24,6 +29,8 @@ extends JavaPlugin {
     private MarketManager marketManager;
     private EconomyHook economyHook;
     private ReputationManager reputationManager;
+    private WarpManager warpManager;
+    private IslandManager islandManager;
 
     public void onEnable() {
         this.saveDefaultConfig();
@@ -33,6 +40,9 @@ extends JavaPlugin {
         }
         this.marketManager = new MarketManager(this, this.economyHook);
         this.reputationManager = new ReputationManager(this);
+        this.warpManager = new WarpManager(this);
+        this.islandManager = new IslandManager(this);
+
         this.getCommand("market").setExecutor((CommandExecutor)new MarketCommand(this));
         this.getCommand("buy").setExecutor((CommandExecutor)new BuyCommand(this));
         this.getCommand("sell").setExecutor((CommandExecutor)new SellCommand(this));
@@ -40,6 +50,12 @@ extends JavaPlugin {
         this.getCommand("futures").setExecutor((CommandExecutor)new FuturesCommand(this));
         this.getCommand("marketitem").setExecutor((CommandExecutor)new SpecialItemCommand(this));
         this.getCommand("prime").setExecutor((CommandExecutor)new PrimeCommand(this));
+        this.getCommand("spawn").setExecutor((CommandExecutor)new SpawnCommand(this));
+        this.getCommand("pvp").setExecutor((CommandExecutor)new PvpCommand(this));
+        this.getCommand("ile").setExecutor((CommandExecutor)new IslandCommand(this));
+        this.getCommand("sethub").setExecutor((CommandExecutor)new SetHubCommand(this));
+        this.getCommand("setpvp").setExecutor((CommandExecutor)new SetPvpCommand(this));
+
         Bukkit.getPluginManager().registerEvents((Listener)new MarketGUIListener(this), (Plugin)this);
         Bukkit.getPluginManager().registerEvents((Listener)new VillagerInteractionListener(this), (Plugin)this);
         Bukkit.getPluginManager().registerEvents((Listener)new FuturesRedeemListener(this), (Plugin)this);
@@ -69,5 +85,13 @@ extends JavaPlugin {
 
     public ReputationManager getReputationManager() {
         return this.reputationManager;
+    }
+
+    public WarpManager getWarpManager() {
+        return this.warpManager;
+    }
+
+    public IslandManager getIslandManager() {
+        return this.islandManager;
     }
 }
