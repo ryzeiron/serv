@@ -13,7 +13,6 @@ import org.bukkit.plugin.Plugin;
 // les capacites du metier Hacker en clic droit une fois pose
 public class HackerComputerItem {
     public static final Material BASE_MATERIAL = Material.JUKEBOX;
-    public static final int CUSTOM_MODEL_DATA = 5003;
 
     private HackerComputerItem() {
     }
@@ -32,7 +31,6 @@ public class HackerComputerItem {
                     "§7du métier Hacker.",
                     "§eClic droit §7une fois posé pour l'ouvrir."
             ));
-            meta.setCustomModelData(CUSTOM_MODEL_DATA);
             meta.getPersistentDataContainer().set(key(plugin), PersistentDataType.BYTE, (byte) 1);
             stack.setItemMeta(meta);
         }

@@ -1,9 +1,0 @@
-{
-  "parent": "item/generated",
-  "textures": {
-    "layer0": "item/amethyst_shard"
-  },
-  "overrides": [
-    { "predicate": { "custom_model_data": 5001 }, "model": "item/lithium_ingot" }
-  ]
-}

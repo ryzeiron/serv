@@ -19,80 +19,63 @@ def new_item_canvas():
 
 
 # ------------------------------------------------------------ Lingot de Lithium
+# Remplace directement la texture vanilla de l'amethyst_shard (pas de modele/override
+# custom_model_data : sur 1.21.2+, Mojang a change la selection de modele d'ITEM et
+# l'ancien systeme d'overrides n'est plus fiable -- alors qu'un simple remplacement de
+# texture, comme pour les blocs, marche quelle que soit la version)
 def build_lithium_ingot():
     img = new_item_canvas()
     d = ImageDraw.Draw(img)
-    outline = (55, 56, 62, 255)
-    shadow = (100, 101, 108, 255)
-    base = (158, 160, 168, 255)
-    light = (205, 207, 214, 255)
-    hilite = (230, 232, 238, 255)
+    outline = (50, 51, 58, 255)
+    shadow = (92, 93, 102, 255)
+    base = (146, 148, 156, 255)
+    light = (196, 198, 206, 255)
+    hilite = (222, 224, 232, 255)
+    violet = (168, 150, 205, 255)
+    violet_light = (196, 180, 224, 255)
 
     # silhouette trapezoidale (large en bas, plus etroite en haut), style lingot vanilla
     poly = [(4, 6), (11, 6), (13, 9), (13, 11), (10, 12), (5, 12), (2, 11), (2, 9)]
     d.polygon(poly, fill=base, outline=outline)
-    # face superieure plus claire
+    # face superieure plus claire, avec un reflet violet (le "lithium" du lingot de fer)
     d.polygon([(4, 6), (11, 6), (12, 7), (11, 8), (4, 8), (3, 7)], fill=light)
-    d.line([(5, 7), (10, 7)], fill=hilite)
+    d.line([(5, 7), (9, 7)], fill=hilite)
+    d.point([(6, 6)], fill=violet_light)
+    d.point([(9, 6)], fill=violet)
+    d.point([(7, 7)], fill=violet)
     # ombre basse
     d.line([(3, 11), (10, 11)], fill=shadow)
     d.point([(3, 10)], fill=shadow)
     d.point([(12, 10)], fill=shadow)
-    img.save(f"{ITEM_DIR}/lithium_ingot.png")
+    img.save(f"{ITEM_DIR}/amethyst_shard.png")
 
 
 # ------------------------------------------------------------------- Plastique
+# Remplace directement la texture vanilla du slime_ball, meme logique que le lithium
 def build_plastic():
     img = new_item_canvas()
     d = ImageDraw.Draw(img)
-    outline = (120, 122, 126, 255)
-    base = (214, 216, 219, 255)
-    light = (238, 239, 241, 255)
-    shadow = (172, 174, 178, 255)
+    outline = (135, 137, 140, 255)
+    base = (218, 219, 221, 255)
+    light = (240, 241, 242, 255)
+    shadow = (185, 186, 189, 255)
+    crease = (160, 161, 165, 255)
 
-    # eclat de plastique froisse : forme irreguliere
-    poly = [(3, 5), (7, 3), (11, 4), (13, 7), (12, 10), (13, 12), (9, 13),
-            (6, 12), (3, 13), (2, 10), (4, 8), (2, 6)]
+    # eclat de "papier" plastique, contour volontairement irregulier/pas net (bosses,
+    # coins casses) plutot qu'une silhouette propre
+    poly = [(3, 4), (6, 3), (8, 4), (10, 2), (12, 4), (13, 6), (12, 8),
+            (13, 10), (11, 12), (12, 13), (8, 13), (7, 12), (4, 13),
+            (3, 11), (4, 9), (2, 8), (3, 6), (2, 5)]
     d.polygon(poly, fill=base, outline=outline)
-    # plis / reflets
-    d.line([(5, 5), (8, 7)], fill=light)
-    d.line([(9, 6), (11, 8)], fill=light)
-    d.line([(4, 10), (7, 11)], fill=shadow)
-    d.line([(8, 9), (11, 11)], fill=shadow)
-    d.point([(6, 8)], fill=light)
-    d.point([(10, 5)], fill=light)
-    img.save(f"{ITEM_DIR}/plastic.png")
-
-
-# -------------------------------------------------------- Ordinateur (item icon)
-def build_computer_item():
-    img = new_item_canvas()
-    d = ImageDraw.Draw(img)
-    case = (86, 90, 96, 255)
-    case_light = (130, 134, 140, 255)
-    case_dark = (52, 55, 60, 255)
-    screen = (18, 22, 30, 255)
-    text_green = (90, 230, 130, 255)
-    text_dim = (50, 150, 85, 255)
-    power = (255, 90, 90, 255)
-
-    # bezel du moniteur
-    d.rectangle([1, 1, 14, 10], fill=case, outline=case_dark)
-    d.line([(1, 1), (14, 1)], fill=case_light)
-    d.line([(1, 1), (1, 10)], fill=case_light)
-    # ecran
-    d.rectangle([3, 3, 12, 8], fill=screen)
-    # lignes de terminal
-    d.line([(4, 4), (9, 4)], fill=text_green)
-    d.line([(4, 6), (11, 6)], fill=text_dim)
-    d.line([(4, 7), (7, 7)], fill=text_dim)
-    # led d'alimentation
-    d.point([(13, 9)], fill=power)
-    # pied + socle
-    d.rectangle([7, 11, 8, 11], fill=case_dark)
-    d.rectangle([5, 12, 10, 13], fill=case)
-    d.line([(5, 12), (10, 12)], fill=case_light)
-    img.save(f"{ITEM_DIR}/computer.png")
+    # bosses / plis irreguliers (petites taches claires et sombres, pas des lignes nettes)
+    for x, y, c in [
+        (5, 5, light), (9, 4, light), (11, 6, shadow), (6, 8, shadow),
+        (9, 9, light), (4, 10, crease), (10, 11, crease), (7, 6, crease),
+        (8, 10, light), (5, 11, shadow),
+    ]:
+        d.point([(x, y)], fill=c)
+        d.point([(x + 1, y)], fill=c)
+    img.save(f"{ITEM_DIR}/slime_ball.png")
 
 
 # --------------------------------------------------- Minerai de lithium (calcite)
@@ -200,7 +183,6 @@ def build_laptop_screen():
 
 build_lithium_ingot()
 build_plastic()
-build_computer_item()
 build_calcite_ore()
 build_computer_block()
 build_laptop_base()

@@ -15,8 +15,6 @@ import org.bukkit.plugin.Plugin;
 public class CustomMaterials {
     private static final String LITHIUM_ID = "lithium_ingot";
     private static final String PLASTIC_ID = "plastic";
-    public static final int LITHIUM_CUSTOM_MODEL_DATA = 5001;
-    public static final int PLASTIC_CUSTOM_MODEL_DATA = 5002;
 
     private CustomMaterials() {
     }
@@ -26,13 +24,13 @@ public class CustomMaterials {
     }
 
     public static ItemStack createLithiumIngot(Plugin plugin) {
-        return build(plugin, LITHIUM_ID, Material.AMETHYST_SHARD, LITHIUM_CUSTOM_MODEL_DATA, "§dLingot de Lithium",
+        return build(plugin, LITHIUM_ID, Material.AMETHYST_SHARD, "§dLingot de Lithium",
                 "§7Un metal leger et conducteur,",
                 "§7trouve en traces pres des gisements de diamant.");
     }
 
     public static ItemStack createPlastic(Plugin plugin) {
-        return build(plugin, PLASTIC_ID, Material.SLIME_BALL, PLASTIC_CUSTOM_MODEL_DATA, "§aPlastique",
+        return build(plugin, PLASTIC_ID, Material.SLIME_BALL, "§aPlastique",
                 "§7Un dechet flottant remonte de l'eau...",
                 "§7Composant cle de l'electronique moderne.");
     }
@@ -53,7 +51,7 @@ public class CustomMaterials {
         return id.equals(value);
     }
 
-    private static ItemStack build(Plugin plugin, String id, Material material, int customModelData, String name, String... loreLines) {
+    private static ItemStack build(Plugin plugin, String id, Material material, String name, String... loreLines) {
         ItemStack stack = new ItemStack(material);
         ItemMeta meta = stack.getItemMeta();
         if (meta != null) {
@@ -63,7 +61,6 @@ public class CustomMaterials {
                 lore.add(line);
             }
             meta.setLore(lore);
-            meta.setCustomModelData(customModelData);
             meta.getPersistentDataContainer().set(key(plugin), PersistentDataType.STRING, id);
             stack.setItemMeta(meta);
         }
