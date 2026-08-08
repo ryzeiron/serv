@@ -7,6 +7,7 @@ import com.antonin.marketeconomy.command.JobCommands;
 import com.antonin.marketeconomy.command.JournalCommand;
 import com.antonin.marketeconomy.command.MineCommands;
 import com.antonin.marketeconomy.command.ModCommands;
+import com.antonin.marketeconomy.command.VillagerCommands;
 import com.antonin.marketeconomy.command.WarpCommands;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -47,6 +48,7 @@ public final class ServerEvents {
         WarpCommands.register(event.getDispatcher());
         FuturesCommands.register(event.getDispatcher(), event.getBuildContext());
         JournalCommand.register(event.getDispatcher());
+        VillagerCommands.register(event.getDispatcher(), event.getBuildContext());
     }
 
     @SubscribeEvent

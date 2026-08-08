@@ -103,10 +103,23 @@ Phase 6 : journal boursier, contrats a terme, reputation :
   d'accueil des PNJ (`buildGreeting`) sont portes mais pas encore branches, faute de
   systeme de PNJ marchands (voir plus bas).
 
-Pas encore porte : les menus GUI graphiques (inventaires cliquables — `/market`, `/metier`
-et le terminal Hacker restent en chat cliquable pour l'instant), le HUD, le mini-jeu de
-`/hack terminal`, les PNJ marchands avec memoire (villageois qui commercent selon leur
-metier et la reputation du joueur).
+Phase 7 : PNJ marchands avec memoire. Meme principe que le reste du portage : le clic droit
+sur un villageois ouvre un menu en chat cliquable (liens `[Acheter]`/`[Vendre]`/`[Tout
+vendre]`) plutot qu'un inventaire graphique.
+
+- `VillagerTrade` — meme correspondance metier de villageois → categorie du marche que le
+  plugin Paper (fermier/pêcheur/boucher → consommables, forgerons → minerais, etc.).
+- `VillagerEvents` — clic droit sur un villageois : accueil selon la reputation
+  (`buildGreeting`), blocage si le joueur est "hostile" pour ce PNJ, sinon liste des
+  items de sa categorie avec prix ajustes par la reputation (`getBuyMultiplier`/
+  `getSellMultiplier`) et liens cliquables. Tuer un villageois penalise la reputation du
+  tueur.
+- `VillagerCommands` — `/villagerbuy`, `/villagersell`, `/villagersellall <categorie>`
+  (equivalent des clics du menu graphique original), pas destinees a etre tapees a la main.
+
+Pas encore porte : les menus GUI graphiques (inventaires cliquables — `/market`, `/metier`,
+le terminal Hacker et le marchand PNJ restent tous en chat cliquable pour l'instant), le
+HUD, le mini-jeu de `/hack terminal`.
 
 Points d'API Forge 1.21 recents utilises ici sans pouvoir etre compiles/verifies dans ce
 sandbox (a checker en premier en cas d'erreur de compilation) :
@@ -123,9 +136,13 @@ sandbox (a checker en premier en cas d'erreur de compilation) :
 - `DataComponents.CUSTOM_DATA`/`CUSTOM_NAME`/`LORE` dans `FuturesItem` (le systeme de
   composants de donnees qui remplace l'ancien NBT d'ItemStack depuis la 1.20.5).
 - `PlayerTeam#setPlayerPrefix` / `Scoreboard#addPlayerTeam` dans `ReputationManager`.
+- `VillagerData#getProfession()` dans `VillagerEvents` : suppose qu'il renvoie un
+  `Holder<VillagerProfession>` (d'ou l'appel `.value()`) plutot qu'un `VillagerProfession`
+  direct — a verifier en premier si `VillagerEvents` ne compile pas.
 
-Tout le reste du plugin Paper (GUIs graphiques, HUD, PNJ marchands) reste a reecrire dans
-ce mod — c'est un gros chantier qui sera fait par etapes.
+Tout le reste du plugin Paper (GUIs graphiques cliquables, HUD, mini-jeu du terminal
+Hacker) reste a reecrire dans ce mod si souhaite — le contenu/gameplay est fonctionnellement
+complet, il ne manque que la couche visuelle.
 
 ## Build
 
