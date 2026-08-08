@@ -75,9 +75,7 @@ public class MineManager {
             double z = instance.z0 + MineGenerator.PLATE_LOCAL_Z + 0.5;
             ArmorStand stand = new ArmorStand(level, x, y, z);
             stand.setInvisible(true);
-            stand.setMarker(true);
             stand.setNoGravity(true);
-            stand.setSmall(true);
             stand.setInvulnerable(true);
             stand.setCustomName(Component.literal("§eMine n°" + targetTier));
             stand.setCustomNameVisible(true);

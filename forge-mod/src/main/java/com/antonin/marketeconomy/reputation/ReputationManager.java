@@ -63,7 +63,7 @@ public class ReputationManager {
             this.applyTitle(server, player, titleAfter);
         }
         if (titleAfter != null && !titleAfter.equals(titleBefore)) {
-            server.getPlayerList().broadcastSystemMessage(Component.literal("§6[Marché] §e" + player.getGameProfile().getName()
+            server.getPlayerList().broadcastSystemMessage(Component.literal("§6[Marché] §e" + player.getGameProfile().name()
                     + " devient " + titleAfter + " §e!"), false);
         }
     }
@@ -91,7 +91,7 @@ public class ReputationManager {
         if (team == null) {
             team = scoreboard.addPlayerTeam(teamName);
         }
-        scoreboard.addPlayerToTeam(player.getGameProfile().getName(), team);
+        scoreboard.addPlayerToTeam(player.getGameProfile().name(), team);
         team.setPlayerPrefix(Component.literal(title + " "));
     }
 

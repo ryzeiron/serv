@@ -6,11 +6,13 @@ import com.antonin.marketeconomy.warp.WarpManager;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import java.util.Set;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Relative;
 import net.minecraft.world.phys.Vec3;
 
 // Teleportation fixe (/spawn, /pvp, /sethub, /setpvp) et iles de depart (/ile).
@@ -71,7 +73,7 @@ public final class WarpCommands {
         ServerLevel overworld = ctx.getSource().getServer().overworld();
         IslandManager.IslandSpawn island = islands.getOrCreateIsland(player, overworld);
         Vec3 pos = island.position();
-        player.teleportTo(overworld, pos.x, pos.y, pos.z, player.getYRot(), player.getXRot());
+        player.teleportTo(overworld, pos.x, pos.y, pos.z, Set.of(), player.getYRot(), player.getXRot(), true);
         if (hadIsland) {
             player.sendSystemMessage(Component.literal("§6[Marché] §eTéléporté sur ton île."));
         } else {

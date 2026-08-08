@@ -16,6 +16,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 // Moteur de prix offre/demande du marche, avec detection de manipulation, primes et ecoutes
 // (capacites du metier Hacker). Les contrats a terme et le journal boursier viendront avec
@@ -218,7 +219,7 @@ public class MarketManager {
         }
         this.bountyEligibleUntil.put(uuid, System.currentTimeMillis() + BOUNTY_ELIGIBLE_MILLIS);
         ServerPlayer player = server.getPlayerList().getPlayer(uuid);
-        String name = player != null ? player.getGameProfile().getName() : "Un joueur";
+        String name = player != null ? player.getGameProfile().name() : "Un joueur";
         broadcast(server, "§4[Marché] §cActivité suspecte détectée sur " + item.getDisplayName()
                 + " (" + Math.round(share * 100) + "% du volume) — " + name
                 + " peut être ciblé par une prime (§7/prime " + name + "§c) pendant "
@@ -248,16 +249,16 @@ public class MarketManager {
             return "Tu ne peux pas placer une prime sur toi-même.";
         }
         if (!this.isBountyEligible(target.getUUID())) {
-            return target.getGameProfile().getName() + " n'est pas actuellement recherché pour manipulation de marché.";
+            return target.getGameProfile().name() + " n'est pas actuellement recherché pour manipulation de marché.";
         }
         if (this.activeBounties.containsKey(target.getUUID())) {
-            return "Un contrat est déjà actif sur " + target.getGameProfile().getName() + ".";
+            return "Un contrat est déjà actif sur " + target.getGameProfile().name() + ".";
         }
         long expiresAt = System.currentTimeMillis() + BOUNTY_DURATION_MILLIS;
         this.activeBounties.put(target.getUUID(), new Bounty(target.getUUID(), placer.getUUID(), BOUNTY_CUT_SHARE, expiresAt));
         this.bountyEligibleUntil.remove(target.getUUID());
-        broadcast(placer.getServer(), "§4[Marché] §c" + placer.getGameProfile().getName()
-                + " place un contrat sur la tête de " + target.getGameProfile().getName()
+        broadcast(ServerLifecycleHooks.getCurrentServer(), "§4[Marché] §c" + placer.getGameProfile().name()
+                + " place un contrat sur la tête de " + target.getGameProfile().name()
                 + " ! " + Math.round(BOUNTY_CUT_SHARE * 100) + "% de ses ventes lui reviendront pendant "
                 + (BOUNTY_DURATION_MILLIS / 60_000L) + " min.");
         return null;
@@ -273,9 +274,9 @@ public class MarketManager {
             double cut = remaining * bounty.getCutShare();
             if (cut > 0.0) {
                 this.economyManager.deposit(bounty.getPlacer(), cut);
-                ServerPlayer onlinePlacer = seller.getServer().getPlayerList().getPlayer(bounty.getPlacer());
+                ServerPlayer onlinePlacer = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(bounty.getPlacer());
                 if (onlinePlacer != null) {
-                    onlinePlacer.sendSystemMessage(Component.literal("§6[Prime] §eTa cible " + seller.getGameProfile().getName()
+                    onlinePlacer.sendSystemMessage(Component.literal("§6[Prime] §eTa cible " + seller.getGameProfile().name()
                             + " a vendu — tu touches " + this.economyManager.format(cut) + "."));
                 }
             }
@@ -297,19 +298,19 @@ public class MarketManager {
         }
         this.economyManager.deposit(wiretap.getHacker(), cut);
         wiretap.addSkimmed(cut);
-        ServerPlayer hackerOnline = seller.getServer().getPlayerList().getPlayer(wiretap.getHacker());
+        ServerPlayer hackerOnline = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(wiretap.getHacker());
         if (hackerOnline != null) {
-            hackerOnline.sendSystemMessage(Component.literal("§5[Hack] §dInterception sur " + seller.getGameProfile().getName()
+            hackerOnline.sendSystemMessage(Component.literal("§5[Hack] §dInterception sur " + seller.getGameProfile().name()
                     + " : +" + this.economyManager.format(cut) + "."));
         }
         if (!wiretap.isCaught() && this.random.nextDouble() < wiretap.getCatchChance()) {
             wiretap.setCaught(true);
-            String hackerName = hackerOnline != null ? hackerOnline.getGameProfile().getName() : "un joueur";
+            String hackerName = hackerOnline != null ? hackerOnline.getGameProfile().name() : "un joueur";
             seller.sendSystemMessage(Component.literal("§c[!] Intrusion détectée sur tes ventes : " + hackerName
                     + " t'espionnait ! Tu peux le signaler avec §7/prime " + hackerName));
             this.bountyEligibleUntil.put(wiretap.getHacker(), System.currentTimeMillis() + BOUNTY_ELIGIBLE_MILLIS);
-            broadcast(seller.getServer(), "§4[Marché] §c" + hackerName + " a été repéré en train de pirater les ventes de "
-                    + seller.getGameProfile().getName() + " ! Une prime peut être placée (§7/prime " + hackerName + "§c).");
+            broadcast(ServerLifecycleHooks.getCurrentServer(), "§4[Marché] §c" + hackerName + " a été repéré en train de pirater les ventes de "
+                    + seller.getGameProfile().name() + " ! Une prime peut être placée (§7/prime " + hackerName + "§c).");
         }
         return remaining - cut;
     }
@@ -325,10 +326,10 @@ public class MarketManager {
         }
         Long targetCd = this.wiretapTargetCooldownUntil.get(target.getUUID());
         if (targetCd != null && targetCd > System.currentTimeMillis()) {
-            return target.getGameProfile().getName() + " a été ciblé récemment, réessaie plus tard.";
+            return target.getGameProfile().name() + " a été ciblé récemment, réessaie plus tard.";
         }
         if (this.activeWiretaps.containsKey(target.getUUID())) {
-            return target.getGameProfile().getName() + " est déjà sous écoute.";
+            return target.getGameProfile().name() + " est déjà sous écoute.";
         }
         long expiresAt = System.currentTimeMillis() + durationMillis;
         this.activeWiretaps.put(target.getUUID(),
@@ -407,7 +408,7 @@ public class MarketManager {
                 return false;
             }
             ServerPlayer target = server.getPlayerList().getPlayer(entry.getKey());
-            String name = target != null ? target.getGameProfile().getName() : "un joueur recherché";
+            String name = target != null ? target.getGameProfile().name() : "un joueur recherché";
             broadcast(server, "§6[Marché] §eLe contrat sur " + name + " a expiré.");
             return true;
         });

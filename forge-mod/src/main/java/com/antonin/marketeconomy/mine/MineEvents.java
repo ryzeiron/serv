@@ -1,6 +1,5 @@
 package com.antonin.marketeconomy.mine;
 
-import com.antonin.marketeconomy.MarketEconomyMod;
 import com.antonin.marketeconomy.job.JobType;
 import com.antonin.marketeconomy.job.PlayerJob;
 import com.antonin.marketeconomy.server.MarketEconomyServer;
@@ -10,16 +9,15 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.util.Result;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 
 // Controle le minage dans les mines par palier (il faut etre Mineur et avoir le niveau minimum
 // du palier pour casser un minerai) et le reseau de teleportation entre mines (plaques de
 // pression detectees via le tick joueur, faute d'evenement Forge dedie au "pas sur une plaque").
-@Mod.EventBusSubscriber(modid = MarketEconomyMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class MineEvents {
     private static final double XP_PER_ORE_BASE = 8.0;
 
@@ -50,7 +48,7 @@ public final class MineEvents {
         PlayerJob job = server.getJobManager().getJob(player.getUUID());
         int minLevel = MineManager.minLevelFor(tier);
         if (job == null || job.getType() != JobType.MINEUR || job.getLevel() < minLevel) {
-            event.setCanceled(true);
+            event.setResult(Result.DENY);
             player.sendSystemMessage(Component.literal("§6[Mine] §cIl faut être Mineur niveau " + minLevel
                     + "+ pour miner ici (§f/metier§c)."));
             return;
@@ -64,11 +62,8 @@ public final class MineEvents {
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
-        if (!(event.player instanceof ServerPlayer player)) {
+    public static void onPlayerTick(TickEvent.PlayerTickEvent.Post event) {
+        if (!(event.player() instanceof ServerPlayer player)) {
             return;
         }
         if (!(player.level() instanceof ServerLevel level)) {

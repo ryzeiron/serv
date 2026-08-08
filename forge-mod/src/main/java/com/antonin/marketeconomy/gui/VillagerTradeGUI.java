@@ -16,6 +16,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemLore;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 // Menu graphique du marchand PNJ : une icone par item de la categorie du villageois, prix
 // ajustes par la reputation du joueur, clic gauche achete 1, clic droit vend 1, et une icone
@@ -108,12 +109,12 @@ public final class VillagerTradeGUI {
                 return;
             }
             market.recordPurchase(player.getUUID(), marketItem, 1L, price);
-            reputation.registerTrade(player.getServer(), player, price);
+            reputation.registerTrade(ServerLifecycleHooks.getCurrentServer(), player, price);
             player.getInventory().add(new ItemStack(vanillaItem, 1));
             player.sendSystemMessage(Component.literal("§aAcheté 1x " + marketItem.getDisplayName() + " pour " + economy.format(price)));
         } else if (button == 1) {
             ItemStack toRemove = null;
-            for (ItemStack stack : player.getInventory().items) {
+            for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
                 if (stack.is(vanillaItem) && !stack.isEmpty()) {
                     toRemove = stack;
                     break;
@@ -126,7 +127,7 @@ public final class VillagerTradeGUI {
             double price = round2(marketItem.getSellPrice() * reputation.getSellMultiplier(player.getUUID()));
             toRemove.shrink(1);
             market.recordSale(player.getUUID(), marketItem, 1L, price);
-            reputation.registerTrade(player.getServer(), player, price);
+            reputation.registerTrade(ServerLifecycleHooks.getCurrentServer(), player, price);
             double net = market.applyBountyCut(player, price);
             economy.deposit(player.getUUID(), net);
             player.sendSystemMessage(Component.literal("§aVendu 1x " + marketItem.getDisplayName() + " pour " + economy.format(net)));
@@ -147,7 +148,7 @@ public final class VillagerTradeGUI {
                 continue;
             }
             int count = 0;
-            for (ItemStack stack : player.getInventory().items) {
+            for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
                 if (stack.is(marketItem.getItem())) {
                     count += stack.getCount();
                     stack.setCount(0);
@@ -158,7 +159,7 @@ public final class VillagerTradeGUI {
             }
             double total = round2(marketItem.getSellPrice() * sellMultiplier * count);
             market.recordSale(player.getUUID(), marketItem, count, total);
-            reputation.registerTrade(player.getServer(), player, total);
+            reputation.registerTrade(ServerLifecycleHooks.getCurrentServer(), player, total);
             grandTotal += total;
             itemTypesSold++;
             unitsSold += count;

@@ -5,12 +5,14 @@ import com.google.gson.GsonBuilder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Relative;
 import net.minecraft.world.level.Level;
 
 // Points de teleportation fixes du serveur (spawn/hub, ile pvp), enregistrables en jeu via
@@ -54,7 +56,7 @@ public class WarpManager {
         if (level == null) {
             return false;
         }
-        player.teleportTo(level, warp.x, warp.y, warp.z, warp.yaw, warp.pitch);
+        player.teleportTo(level, warp.x, warp.y, warp.z, Set.of(), warp.yaw, warp.pitch, true);
         return true;
     }
 

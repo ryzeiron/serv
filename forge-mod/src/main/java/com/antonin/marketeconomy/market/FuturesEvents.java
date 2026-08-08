@@ -1,6 +1,5 @@
 package com.antonin.marketeconomy.market;
 
-import com.antonin.marketeconomy.MarketEconomyMod;
 import com.antonin.marketeconomy.economy.EconomyManager;
 import com.antonin.marketeconomy.server.MarketEconomyServer;
 import java.util.UUID;
@@ -9,51 +8,48 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 
 // Encaissement d'un contrat a terme physique (FuturesItem) : clic droit avec le contrat en
 // main principale, apres son echeance.
-@Mod.EventBusSubscriber(modid = MarketEconomyMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class FuturesEvents {
 
     private FuturesEvents() {
     }
 
     @SubscribeEvent
-    public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        handle(event);
+    public static boolean onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        return handle(event);
     }
 
     @SubscribeEvent
-    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        handle(event);
+    public static boolean onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        return handle(event);
     }
 
-    private static void handle(PlayerInteractEvent event) {
+    private static boolean handle(PlayerInteractEvent event) {
         if (event.getHand() != InteractionHand.MAIN_HAND) {
-            return;
+            return false;
         }
         if (!(event.getEntity() instanceof ServerPlayer player)) {
-            return;
+            return false;
         }
         ItemStack hand = event.getItemStack();
         UUID contractId = FuturesItem.readContractId(hand);
         if (contractId == null) {
-            return;
+            return false;
         }
-        event.setCanceled(true);
 
         MarketManager market = MarketEconomyServer.get().getMarketManager();
         FuturesContract contract = market.getContract(contractId);
         if (contract == null) {
             player.sendSystemMessage(Component.literal("§cCe contrat n'existe plus ou a déjà été encaissé."));
-            return;
+            return true;
         }
         if (!contract.isSettled()) {
             long remaining = Math.max(0L, (contract.getMaturityAtMillis() - System.currentTimeMillis()) / 1000L);
             player.sendSystemMessage(Component.literal("§cCe contrat n'est pas encore arrivé à échéance (" + remaining + "s restantes)."));
-            return;
+            return true;
         }
 
         double payout = market.redeemContract(contractId);
@@ -65,5 +61,6 @@ public final class FuturesEvents {
         String profitColor = profit >= 0 ? "§a+" : "§c";
         player.sendSystemMessage(Component.literal("§6[Contrat] §eEncaissé : " + economy.format(payout)
                 + " (" + profitColor + String.format("%.2f", profit) + "§e)"));
+        return true;
     }
 }

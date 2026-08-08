@@ -55,7 +55,7 @@ public final class MerchantCompassTracker {
         }
         AABB area = player.getBoundingBox().inflate(SEARCH_RADIUS);
         List<Villager> villagers = level.getEntitiesOfClass(Villager.class, area,
-                v -> VillagerTrade.professionCategory(v.getVillagerData().getProfession().value()) == category);
+                v -> VillagerTrade.professionCategory(v.getVillagerData().profession().value()) == category);
 
         Villager nearest = null;
         double nearestDistance = Double.MAX_VALUE;

@@ -86,7 +86,7 @@ public final class FuturesCommands {
         long now = System.currentTimeMillis();
         int found = 0;
         player.sendSystemMessage(Component.literal("§6=== Contrats dans ton inventaire ==="));
-        for (ItemStack stack : player.getInventory().items) {
+        for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
             UUID contractId = FuturesItem.readContractId(stack);
             if (contractId == null) {
                 continue;

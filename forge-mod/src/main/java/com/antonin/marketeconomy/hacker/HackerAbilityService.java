@@ -189,7 +189,7 @@ public class HackerAbilityService {
             this.economyManager.withdraw(player.getUUID(), WIRETAP_COST);
         }
         this.setCooldown(player, "wiretap", WIRETAP_COOLDOWN_MILLIS);
-        player.sendSystemMessage(Component.literal("§5[Hack] §dÉcoute posée sur " + target.getGameProfile().getName()
+        player.sendSystemMessage(Component.literal("§5[Hack] §dÉcoute posée sur " + target.getGameProfile().name()
                 + " pendant " + (WIRETAP_DURATION_MILLIS / 1000L) + "s — tu toucheras " + Math.round(cutShare * 100) + "% de ses ventes."));
         this.addXp(player, XP_WIRETAP_START);
     }
@@ -232,7 +232,7 @@ public class HackerAbilityService {
             return;
         }
         this.economyManager.deposit(player.getUUID(), stolen);
-        player.sendSystemMessage(Component.literal("§5[Hack] §dBanque de " + target.getGameProfile().getName()
+        player.sendSystemMessage(Component.literal("§5[Hack] §dBanque de " + target.getGameProfile().name()
                 + " piratée ! Tu voles " + this.economyManager.format(stolen) + "."));
         target.sendSystemMessage(Component.literal("§4[!] §cTa banque d'île a été piratée ! Tu perds "
                 + Math.round(BANK_HACK_DRAIN_SHARE * 100) + "% de ton solde (" + this.economyManager.format(stolen) + ")."));

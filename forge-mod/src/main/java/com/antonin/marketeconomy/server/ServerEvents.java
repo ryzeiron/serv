@@ -1,6 +1,5 @@
 package com.antonin.marketeconomy.server;
 
-import com.antonin.marketeconomy.MarketEconomyMod;
 import com.antonin.marketeconomy.command.FuturesCommands;
 import com.antonin.marketeconomy.command.HackCommands;
 import com.antonin.marketeconomy.command.HudCommand;
@@ -18,11 +17,9 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
-@Mod.EventBusSubscriber(modid = MarketEconomyMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ServerEvents {
     private static final int PRICE_UPDATE_INTERVAL_TICKS = 20 * 60;
     private static final int MINE_REGEN_INTERVAL_TICKS = 20 * 60 * 25;
@@ -65,12 +62,12 @@ public final class ServerEvents {
         if (MarketEconomyServer.get() == null || !(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
-        MarketEconomyServer.get().getReputationManager().refreshTitle(player.getServer(), player);
+        MarketEconomyServer.get().getReputationManager().refreshTitle(ServerLifecycleHooks.getCurrentServer(), player);
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || MarketEconomyServer.get() == null) {
+    public static void onServerTick(TickEvent.ServerTickEvent.Post event) {
+        if (MarketEconomyServer.get() == null) {
             return;
         }
         tickCounter++;

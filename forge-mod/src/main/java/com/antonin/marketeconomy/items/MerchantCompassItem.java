@@ -42,7 +42,7 @@ public final class MerchantCompassItem {
             return false;
         }
         CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-        return data != null && data.copyTag().getBoolean(TAG_KEY);
+        return data != null && data.copyTag().getBooleanOr(TAG_KEY, false);
     }
 
     public static void pointTo(ItemStack stack, ResourceKey<Level> dimension, BlockPos pos) {

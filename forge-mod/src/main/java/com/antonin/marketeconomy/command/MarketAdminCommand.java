@@ -60,7 +60,7 @@ public final class MarketAdminCommand {
         double amount = DoubleArgumentType.getDouble(ctx, "amount");
         var economy = MarketEconomyServer.get().getEconomyManager();
         economy.deposit(target.getUUID(), amount);
-        ctx.getSource().sendSuccess(() -> Component.literal("§6[Marché] §aDonné " + economy.format(amount) + " à " + target.getGameProfile().getName() + "."), true);
+        ctx.getSource().sendSuccess(() -> Component.literal("§6[Marché] §aDonné " + economy.format(amount) + " à " + target.getGameProfile().name() + "."), true);
         target.sendSystemMessage(Component.literal("§6[Marché] §eTu as reçu " + economy.format(amount) + " d'un admin."));
         return 1;
     }
@@ -74,7 +74,7 @@ public final class MarketAdminCommand {
         }
         if (raw.equalsIgnoreCase("max")) {
             jobManager.setLevel(target.getUUID(), type, type.getMaxLevel());
-            ctx.getSource().sendSuccess(() -> Component.literal("§6[Marché] §a" + target.getGameProfile().getName()
+            ctx.getSource().sendSuccess(() -> Component.literal("§6[Marché] §a" + target.getGameProfile().name()
                     + " est maintenant " + type.getDisplayName() + " §aniveau max (" + type.getMaxLevel() + ")."), true);
             target.sendSystemMessage(Component.literal("§6[Métier] §eTon niveau " + type.getDisplayName() + " §eest maintenant au maximum."));
             return 1;
@@ -88,7 +88,7 @@ public final class MarketAdminCommand {
         }
         jobManager.addXp(target.getUUID(), type, amount);
         ctx.getSource().sendSuccess(() -> Component.literal("§6[Marché] §aDonné " + amount + " xp " + type.getDisplayName()
-                + " §aà " + target.getGameProfile().getName() + "."), true);
+                + " §aà " + target.getGameProfile().name() + "."), true);
         return 1;
     }
 
@@ -103,7 +103,7 @@ public final class MarketAdminCommand {
         };
         target.getInventory().add(item);
         String label = kind.name().toLowerCase();
-        ctx.getSource().sendSuccess(() -> Component.literal("§6[Marché] §aDonné " + amount + "x " + label + " à " + target.getGameProfile().getName() + "."), true);
+        ctx.getSource().sendSuccess(() -> Component.literal("§6[Marché] §aDonné " + amount + "x " + label + " à " + target.getGameProfile().name() + "."), true);
         target.sendSystemMessage(Component.literal("§6[Marché] §eTu as reçu " + amount + "x " + label + " d'un admin."));
         return 1;
     }

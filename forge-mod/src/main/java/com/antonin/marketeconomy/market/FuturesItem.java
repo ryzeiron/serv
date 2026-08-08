@@ -55,7 +55,7 @@ public final class FuturesItem {
             return null;
         }
         try {
-            return UUID.fromString(tag.getString(CONTRACT_ID_KEY));
+            return UUID.fromString(tag.getStringOr(CONTRACT_ID_KEY, ""));
         } catch (IllegalArgumentException e) {
             return null;
         }

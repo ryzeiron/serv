@@ -13,6 +13,7 @@ import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemLore;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 // Menu graphique du marche : une icone par item tradable, clic gauche pour acheter 1, clic droit
 // pour en vendre 1 (depuis l'inventaire du joueur). Remplace la liste en chat de la phase 2.
@@ -71,13 +72,13 @@ public final class MarketScreenGUI {
                 return;
             }
             market.recordPurchase(player.getUUID(), marketItem, 1L, price);
-            MarketEconomyServer.get().getReputationManager().registerTrade(player.getServer(), player, price);
+            MarketEconomyServer.get().getReputationManager().registerTrade(ServerLifecycleHooks.getCurrentServer(), player, price);
             player.getInventory().add(new ItemStack(vanillaItem, 1));
             player.sendSystemMessage(Component.literal("§aAcheté 1x " + marketItem.getDisplayName() + " pour " + economy.format(price)));
             open(player);
         } else if (button == 1) {
             ItemStack toRemove = null;
-            for (ItemStack stack : player.getInventory().items) {
+            for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
                 if (stack.is(vanillaItem) && !stack.isEmpty()) {
                     toRemove = stack;
                     break;
@@ -90,7 +91,7 @@ public final class MarketScreenGUI {
             double price = marketItem.getSellPrice();
             toRemove.shrink(1);
             market.recordSale(player.getUUID(), marketItem, 1L, price);
-            MarketEconomyServer.get().getReputationManager().registerTrade(player.getServer(), player, price);
+            MarketEconomyServer.get().getReputationManager().registerTrade(ServerLifecycleHooks.getCurrentServer(), player, price);
             double net = market.applyBountyCut(player, price);
             economy.deposit(player.getUUID(), net);
             player.sendSystemMessage(Component.literal("§aVendu 1x " + marketItem.getDisplayName() + " pour " + economy.format(net)));

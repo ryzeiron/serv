@@ -67,7 +67,7 @@ public final class HackerTerminalGUI {
             clicker.sendSystemMessage(Component.literal("§d" + entry.label + " §7— clique pour compléter la commande :"));
             clicker.sendSystemMessage(Component.literal("§7» " + entry.commandPrefix).withStyle(style -> style
                     .withColor(ChatFormatting.AQUA)
-                    .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, entry.commandPrefix))
+                    .withClickEvent(new ClickEvent.SuggestCommand(entry.commandPrefix))
                     .withUnderlined(true)));
         });
     }

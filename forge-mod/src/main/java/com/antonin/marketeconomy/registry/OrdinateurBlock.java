@@ -1,6 +1,7 @@
 package com.antonin.marketeconomy.registry;
 
 import com.antonin.marketeconomy.gui.HackerTerminalGUI;
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,6 +23,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 // Ordinateur portable pose : un vrai bloc du mod (pas un reskin de bloc vanilla), avec sa
 // propre forme (base + ecran) et une orientation FACING que le joueur choisit en le posant.
 public class OrdinateurBlock extends HorizontalDirectionalBlock {
+    public static final MapCodec<OrdinateurBlock> CODEC = simpleCodec(OrdinateurBlock::new);
 
     private static final VoxelShape SHAPE = Shapes.or(
             Shapes.box(1 / 16.0, 0, 1 / 16.0, 15 / 16.0, 2 / 16.0, 15 / 16.0),
@@ -31,6 +33,11 @@ public class OrdinateurBlock extends HorizontalDirectionalBlock {
     public OrdinateurBlock(BlockBehaviour.Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
+    }
+
+    @Override
+    protected MapCodec<OrdinateurBlock> codec() {
+        return CODEC;
     }
 
     @Override
@@ -50,7 +57,7 @@ public class OrdinateurBlock extends HorizontalDirectionalBlock {
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         if (player instanceof ServerPlayer serverPlayer) {
