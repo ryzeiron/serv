@@ -78,6 +78,13 @@ futures:
   min-minutes: 2
   max-minutes: 120
 
+# Composants technologiques (utilises pour crafter l'Ordinateur du Hacker)
+custom-items:
+  # Chance d'obtenir un Lingot de Lithium en minant du minerai de diamant
+  lithium-chance: 0.015
+  # Chance qu'une prise a la peche soit remplacee par du Plastique
+  plastic-chance: 0.002
+
 # Metiers (/metier) : progression par xp/niveau, un metier a la fois par joueur
 jobs:
   # Xp necessaire pour passer du niveau N au niveau N+1 = xp-per-level-base * N (niveau max 10)

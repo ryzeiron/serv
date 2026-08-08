@@ -1,8 +1,8 @@
 package com.antonin.marketeconomy.commands;
 
 import com.antonin.marketeconomy.MarketEconomyPlugin;
+import com.antonin.marketeconomy.gui.JobMenuGUI;
 import com.antonin.marketeconomy.model.JobType;
-import com.antonin.marketeconomy.model.PlayerJob;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -24,17 +24,7 @@ public class JobCommand implements CommandExecutor {
         Player player = (Player) sender;
 
         if (args.length == 0) {
-            PlayerJob job = this.plugin.getJobManager().getJob(player.getUniqueId());
-            if (job == null) {
-                player.sendMessage("§6[Métier] §eTu n'as pas encore de métier. Disponible: §5hacker§e. Utilise §f/metier hacker§e pour le choisir.");
-                return true;
-            }
-            double xpNeeded = job.xpToNextLevel(this.plugin.getConfig().getDouble("jobs.xp-per-level-base", 100.0));
-            String progress = job.getLevel() >= PlayerJob.MAX_LEVEL
-                    ? "niveau maximum"
-                    : Math.round(job.getXp()) + "/" + Math.round(xpNeeded) + " xp";
-            player.sendMessage("§6[Métier] §eTon métier: " + job.getType().getDisplayName()
-                    + " §e— niveau " + job.getLevel() + " (" + progress + ")");
+            JobMenuGUI.openMain(this.plugin, player);
             return true;
         }
 
