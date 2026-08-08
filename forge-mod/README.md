@@ -149,9 +149,16 @@ tendance marche, ile) condensees sur une seule ligne en **barre d'action**
 (`Player#displayClientMessage`, methode vanilla simple et stable), rafraichie toutes les
 2s. `/hud [on|off]` bascule l'affichage (persiste en JSON, comme l'original).
 
-Il ne reste que le mini-jeu de `/hack terminal` et un vrai menu graphique pour le
-marchand PNJ (actuellement en chat cliquable, mais reutiliserait `DisplayMenu` de la
-meme facon si souhaite) — tout le reste du plugin Paper est porte.
+Phase 10 : mini-jeu du terminal Hacker. `HackTerminalMinigame` reutilise `DisplayMenu`
+pour la grille 3x3 (memes regles que le plugin Paper : un noeud correct cache, 3 essais,
+indice "brûlant/chaud/tiède/froid" base sur la distance de Manhattan, recompense + xp en
+cas de reussite, xp de consolation en cas d'echec). Accessible via `/hack terminal` et
+depuis une 6e icone dans `HackerTerminalGUI`.
+
+Avec cette phase, l'intégralité du plugin Paper (contenu, gameplay, interface) est
+portee dans le mod Forge. Il ne reste qu'un vrai menu graphique pour le marchand PNJ
+(actuellement en chat cliquable, mais reutiliserait `DisplayMenu` de la meme facon si
+souhaite) — une amelioration cosmetique, pas une fonctionnalite manquante.
 
 Points d'API Forge 1.21 recents utilises ici sans pouvoir etre compiles/verifies dans ce
 sandbox (a checker en premier en cas d'erreur de compilation) :

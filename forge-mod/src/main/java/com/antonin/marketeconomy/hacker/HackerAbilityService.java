@@ -2,6 +2,7 @@ package com.antonin.marketeconomy.hacker;
 
 import com.antonin.marketeconomy.economy.BankManager;
 import com.antonin.marketeconomy.economy.EconomyManager;
+import com.antonin.marketeconomy.gui.HackTerminalMinigame;
 import com.antonin.marketeconomy.job.JobManager;
 import com.antonin.marketeconomy.job.JobType;
 import com.antonin.marketeconomy.job.PlayerJob;
@@ -15,9 +16,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 // Toutes les capacites du metier Hacker (cooldowns, couts, effets), partagees entre la commande
-// /hack et le futur terminal de l'Ordinateur pour eviter de dupliquer la logique.
-// Le mini-jeu de "/hack terminal" (grille de piratage contre du loot) n'est pas encore porte :
-// il dependra du systeme de GUI graphique, qui viendra dans une phase dediee.
+// /hack et le terminal de l'Ordinateur pour eviter de dupliquer la logique.
 public class HackerAbilityService {
     private static final long INSIDER_COOLDOWN_MILLIS = 20_000L;
     private static final double XP_INSIDER = 5.0;
@@ -53,6 +52,8 @@ public class HackerAbilityService {
     private static final double BANK_HACK_CHANCE_MAX = 0.85;
     private static final double BANK_HACK_DRAIN_SHARE = 0.30;
     private static final double XP_BANK_HACK_SUCCESS = 60.0;
+
+    private static final long TERMINAL_COOLDOWN_MILLIS = 180_000L;
 
     private final JobManager jobManager;
     private final MarketManager marketManager;
@@ -236,5 +237,19 @@ public class HackerAbilityService {
         target.sendSystemMessage(Component.literal("§4[!] §cTa banque d'île a été piratée ! Tu perds "
                 + Math.round(BANK_HACK_DRAIN_SHARE * 100) + "% de ton solde (" + this.economyManager.format(stolen) + ")."));
         this.addXp(player, XP_BANK_HACK_SUCCESS);
+    }
+
+    // --- terminal ---
+
+    public void openTerminal(ServerPlayer player) {
+        PlayerJob job = this.requireJob(player);
+        if (job == null) {
+            return;
+        }
+        if (!this.checkCooldown(player, "terminal", TERMINAL_COOLDOWN_MILLIS)) {
+            return;
+        }
+        this.setCooldown(player, "terminal", TERMINAL_COOLDOWN_MILLIS);
+        HackTerminalMinigame.open(player, job);
     }
 }

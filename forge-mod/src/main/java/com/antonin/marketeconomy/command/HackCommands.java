@@ -19,8 +19,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.registries.ForgeRegistries;
 
 // Commandes du metier Hacker : /hack <capacite> ... et /prime <joueur>.
-// La capacite "terminal" (mini-jeu de piratage) n'est pas encore portee, elle dependra du
-// systeme de GUI graphique.
 public final class HackCommands {
 
     private HackCommands() {
@@ -42,7 +40,8 @@ public final class HackCommands {
                                 .executes(HackCommands::runWiretap)))
                 .then(Commands.literal("banque")
                         .then(Commands.argument("target", EntityArgument.player())
-                                .executes(HackCommands::runBankHack))));
+                                .executes(HackCommands::runBankHack)))
+                .then(Commands.literal("terminal").executes(HackCommands::runTerminal)));
 
         dispatcher.register(Commands.literal("prime")
                 .then(Commands.argument("target", EntityArgument.player())
@@ -71,6 +70,7 @@ public final class HackCommands {
         player.sendSystemMessage(Component.literal("§7/hack scramble §f- brouille ta trace face à la détection de manipulation"));
         player.sendSystemMessage(Component.literal("§7/hack wiretap <joueur> §f- intercepte un % de ses ventes pendant un temps"));
         player.sendSystemMessage(Component.literal("§7/hack banque <joueur> §f- tente de pirater sa banque d'île"));
+        player.sendSystemMessage(Component.literal("§7/hack terminal §f- mini-jeu de piratage pour du loot"));
         return 1;
     }
 
@@ -145,6 +145,15 @@ public final class HackCommands {
         }
         ServerPlayer target = EntityArgument.getPlayer(ctx, "target");
         MarketEconomyServer.get().getHackerAbilityService().bankHack(player, target);
+        return 1;
+    }
+
+    private static int runTerminal(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = requireHacker(ctx);
+        if (player == null) {
+            return 0;
+        }
+        MarketEconomyServer.get().getHackerAbilityService().openTerminal(player);
         return 1;
     }
 
