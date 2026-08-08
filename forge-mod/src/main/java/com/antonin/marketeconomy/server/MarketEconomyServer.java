@@ -7,6 +7,7 @@ import com.antonin.marketeconomy.island.IslandManager;
 import com.antonin.marketeconomy.job.JobManager;
 import com.antonin.marketeconomy.market.MarketManager;
 import com.antonin.marketeconomy.mine.MineManager;
+import com.antonin.marketeconomy.reputation.ReputationManager;
 import com.antonin.marketeconomy.warp.WarpManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
@@ -25,6 +26,7 @@ public class MarketEconomyServer {
     private final MineManager mineManager;
     private final WarpManager warpManager;
     private final IslandManager islandManager;
+    private final ReputationManager reputationManager;
 
     private MarketEconomyServer(MinecraftServer server) {
         var dataDir = server.getWorldPath(LevelResource.ROOT).resolve("marketeconomy");
@@ -36,6 +38,7 @@ public class MarketEconomyServer {
         this.mineManager = new MineManager(dataDir.resolve("mines.json"));
         this.warpManager = new WarpManager(dataDir.resolve("warps.json"));
         this.islandManager = new IslandManager(dataDir.resolve("islands.json"));
+        this.reputationManager = new ReputationManager(dataDir.resolve("reputation.json"));
     }
 
     public static void start(MinecraftServer server) {
@@ -52,6 +55,7 @@ public class MarketEconomyServer {
         instance.mineManager.save();
         instance.warpManager.save();
         instance.islandManager.save();
+        instance.reputationManager.save();
         instance = null;
     }
 
@@ -89,5 +93,9 @@ public class MarketEconomyServer {
 
     public IslandManager getIslandManager() {
         return this.islandManager;
+    }
+
+    public ReputationManager getReputationManager() {
+        return this.reputationManager;
     }
 }

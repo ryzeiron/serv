@@ -85,6 +85,7 @@ public final class ModCommands {
             return 0;
         }
         market.recordPurchase(player.getUUID(), marketItem, amount, total);
+        MarketEconomyServer.get().getReputationManager().registerTrade(ctx.getSource().getServer(), player, total);
         player.getInventory().add(new ItemStack(item, amount));
         player.sendSystemMessage(Component.literal("§aAcheté " + amount + "x " + marketItem.getDisplayName()
                 + " pour " + economy.format(total)));
@@ -108,6 +109,7 @@ public final class ModCommands {
         double total = round2(marketItem.getSellPrice() * sellAmount);
         hand.shrink(sellAmount);
         market.recordSale(player.getUUID(), marketItem, sellAmount, total);
+        MarketEconomyServer.get().getReputationManager().registerTrade(ctx.getSource().getServer(), player, total);
         double net = market.applyBountyCut(player, total);
         EconomyManager economy = MarketEconomyServer.get().getEconomyManager();
         economy.deposit(player.getUUID(), net);

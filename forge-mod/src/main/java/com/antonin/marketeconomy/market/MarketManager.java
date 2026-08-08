@@ -4,6 +4,7 @@ import com.antonin.marketeconomy.economy.EconomyManager;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -41,6 +42,13 @@ public class MarketManager {
     private static final double BOUNTY_CUT_SHARE = 0.10;
     private static final long BOUNTY_DURATION_MILLIS = 1_200_000L;
 
+    private static final int HEADLINE_HISTORY_LENGTH = 30;
+    private static final double HEADLINE_THRESHOLD_PERCENT = 3.0;
+
+    private static final double FUTURES_MIN_STAKE = 10.0;
+    private static final int FUTURES_MIN_MINUTES = 2;
+    private static final int FUTURES_MAX_MINUTES = 120;
+
     private final Map<Item, MarketItem> items = new LinkedHashMap<>();
     private final Random random = new Random();
     private MarketEvent activeEvent;
@@ -60,6 +68,12 @@ public class MarketManager {
     private final Map<UUID, Wiretap> activeWiretaps = new HashMap<>(); // cle = cible
     private final Map<UUID, Long> wiretapTargetCooldownUntil = new HashMap<>();
     private final Map<UUID, Long> traceImmuneUntil = new HashMap<>(); // cle = hacker
+
+    // --- journal boursier ---
+    private final LinkedList<String> headlines = new LinkedList<>();
+
+    // --- contrats a terme ---
+    private final Map<UUID, FuturesContract> contracts = new HashMap<>();
 
     public MarketManager(EconomyManager economyManager) {
         this.economyManager = economyManager;
@@ -408,6 +422,9 @@ public class MarketManager {
             this.checkManipulation(item, server);
         }
 
+        MarketItem biggestMoveItem = null;
+        double biggestMoveChangePercent = 0.0;
+
         for (MarketItem item : this.items.values()) {
             long[] totals = categoryTotals.get(item.getCategory());
             long categoryActivity = totals[0] + totals[1];
@@ -417,16 +434,95 @@ public class MarketManager {
             boolean underEvent = this.activeEvent != null
                     && (this.activeEvent.getCategory() == null || this.activeEvent.getCategory() == item.getCategory());
             double itemSensitivity = underEvent ? SENSITIVITY * EVENT_VOLATILITY_MULTIPLIER : SENSITIVITY;
+
+            double priceBefore = item.getCurrentPrice();
             item.recalculatePrice(itemSensitivity, MIN_MULTIPLIER, MAX_MULTIPLIER, categoryPressure, CATEGORY_SENSITIVITY);
+            double priceAfter = item.getCurrentPrice();
+            double changePercent = priceBefore > 0.0 ? (priceAfter - priceBefore) / priceBefore * 100.0 : 0.0;
+            if (Math.abs(changePercent) > Math.abs(biggestMoveChangePercent)) {
+                biggestMoveChangePercent = changePercent;
+                biggestMoveItem = item;
+            }
         }
 
         this.tickEvent(server);
+        this.generateMoveHeadline(biggestMoveItem, biggestMoveChangePercent);
+        this.tickContracts();
         this.tickBounties(server);
         this.tickWiretaps(server);
         this.playerActivity.clear();
 
         this.previousIndexValue = this.lastIndexValue;
         this.lastIndexValue = this.computeIndex();
+    }
+
+    // --- journal boursier ---
+
+    public List<String> getHeadlines() {
+        return this.headlines;
+    }
+
+    private void pushHeadline(String headline) {
+        this.headlines.addFirst(headline);
+        while (this.headlines.size() > HEADLINE_HISTORY_LENGTH) {
+            this.headlines.removeLast();
+        }
+    }
+
+    private void generateMoveHeadline(MarketItem item, double changePercent) {
+        if (item == null || Math.abs(changePercent) < HEADLINE_THRESHOLD_PERCENT) {
+            return;
+        }
+        String verb = changePercent >= 0 ? "grimpe" : "chute";
+        String sign = changePercent >= 0 ? "+" : "";
+        this.pushHeadline(item.getDisplayName() + " " + verb + " de " + sign + String.format("%.1f", changePercent) + "%");
+    }
+
+    // --- contrats a terme ---
+
+    public String validateContractRequest(double stake, int minutes) {
+        if (minutes < FUTURES_MIN_MINUTES || minutes > FUTURES_MAX_MINUTES) {
+            return "Durée invalide (entre " + FUTURES_MIN_MINUTES + " et " + FUTURES_MAX_MINUTES + " minutes).";
+        }
+        if (stake < FUTURES_MIN_STAKE) {
+            return "Mise minimale : " + FUTURES_MIN_STAKE;
+        }
+        return null;
+    }
+
+    public FuturesContract openContract(UUID creator, MarketItem item, FuturesContract.Type type, double stake, int minutes) {
+        long maturity = System.currentTimeMillis() + minutes * 60_000L;
+        UUID id = UUID.randomUUID();
+        FuturesContract contract = new FuturesContract(id, creator, item.getItem(), type, stake, item.getCurrentPrice(), maturity);
+        this.contracts.put(id, contract);
+        return contract;
+    }
+
+    public FuturesContract getContract(UUID contractId) {
+        return this.contracts.get(contractId);
+    }
+
+    // Retire le contrat et rend le paiement fige (0 si le contrat n'existe pas/plus)
+    public double redeemContract(UUID contractId) {
+        FuturesContract contract = this.contracts.remove(contractId);
+        return contract != null ? contract.getLockedPayout() : 0.0;
+    }
+
+    // Fige le paiement au prix du marche au moment de l'echeance, mais ne paie personne : le
+    // contrat est un instrument au porteur, seul l'encaissement (clic droit sur l'item) paie
+    private void tickContracts() {
+        if (this.contracts.isEmpty()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        for (FuturesContract contract : this.contracts.values()) {
+            if (contract.isSettled() || !contract.isMatured(now)) {
+                continue;
+            }
+            MarketItem item = this.items.get(contract.getItem());
+            double priceAtMaturity = item != null ? item.getCurrentPrice() : contract.getPriceAtCreation();
+            contract.settle(priceAtMaturity);
+        }
     }
 
     private void tickEvent(MinecraftServer server) {

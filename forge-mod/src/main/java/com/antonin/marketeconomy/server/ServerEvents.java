@@ -1,13 +1,17 @@
 package com.antonin.marketeconomy.server;
 
 import com.antonin.marketeconomy.MarketEconomyMod;
+import com.antonin.marketeconomy.command.FuturesCommands;
 import com.antonin.marketeconomy.command.HackCommands;
 import com.antonin.marketeconomy.command.JobCommands;
+import com.antonin.marketeconomy.command.JournalCommand;
 import com.antonin.marketeconomy.command.MineCommands;
 import com.antonin.marketeconomy.command.ModCommands;
 import com.antonin.marketeconomy.command.WarpCommands;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -41,6 +45,16 @@ public final class ServerEvents {
         HackCommands.register(event.getDispatcher());
         MineCommands.register(event.getDispatcher());
         WarpCommands.register(event.getDispatcher());
+        FuturesCommands.register(event.getDispatcher(), event.getBuildContext());
+        JournalCommand.register(event.getDispatcher());
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (MarketEconomyServer.get() == null || !(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        MarketEconomyServer.get().getReputationManager().refreshTitle(player.getServer(), player);
     }
 
     @SubscribeEvent

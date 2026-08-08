@@ -82,10 +82,31 @@ Paper et cote Forge/vanilla — les structures deja generees pour le plugin Pape
 - `WarpManager` — persistence JSON du hub et de l'ile PvP (position + dimension + yaw/pitch).
 - Commandes `/spawn`, `/pvp`, `/sethub`, `/setpvp` (permission niveau 2), `/ile`.
 
+Phase 6 : journal boursier, contrats a terme, reputation :
+
+- `MarketManager` genere de nouveau des titres d'actualite a chaque recalcul de prix
+  (plus gros mouvement de prix du cycle, stabilisation apres un evenement) ; `/journal`
+  les affiche en chat (pas de livre ecrit — le format des livres a change avec les
+  composants de donnees en 1.20.5+, evite ici par prudence).
+- `FuturesContract` / `FuturesItem` : contrats a terme LONG/SHORT sur un item du marche,
+  materialises par un item PAPIER echangeable (tagge via le composant `CustomData`,
+  successeur du PDC Bukkit) qui se regle au prix constate a l'echeance et s'encaisse en
+  clic droit. Commande `/futures <long|short> <item> <mise> <minutes>` et `/futures list`.
+  La variante "Graine Spéculative" (item alternatif fantaisie pour le meme contrat) n'est
+  pas portee, seul le Contrat Scellé (papier) existe.
+- `ReputationManager` / `PlayerReputation` : score de confiance par joueur, gagne a
+  chaque achat/vente, avec des titres de prestige (Négociant → Marchand → Grand Marchand
+  → Magnat du Marché) affiches en prefixe d'equipe. Contrairement a Bukkit (scoreboard
+  personnalisable par joueur), le vanilla n'a qu'un seul Scoreboard partage par le
+  serveur — plus simple ici, pas besoin de le repousser sur chaque spectateur.
+  Les multiplicateurs prix (`getBuyMultiplier`/`getSellMultiplier`) et le systeme
+  d'accueil des PNJ (`buildGreeting`) sont portes mais pas encore branches, faute de
+  systeme de PNJ marchands (voir plus bas).
+
 Pas encore porte : les menus GUI graphiques (inventaires cliquables — `/market`, `/metier`
 et le terminal Hacker restent en chat cliquable pour l'instant), le HUD, le mini-jeu de
-`/hack terminal`, les contrats a terme, le journal boursier, la reputation et les PNJ
-marchands.
+`/hack terminal`, les PNJ marchands avec memoire (villageois qui commercent selon leur
+metier et la reputation du joueur).
 
 Points d'API Forge 1.21 recents utilises ici sans pouvoir etre compiles/verifies dans ce
 sandbox (a checker en premier en cas d'erreur de compilation) :
@@ -99,10 +120,12 @@ sandbox (a checker en premier en cas d'erreur de compilation) :
 - `StructureTemplateManager#get(ResourceLocation)` / `StructureTemplate#placeInWorld(...)`
   dans `IslandManager` (API de placement de structure, stable depuis longtemps mais pas
   verifiee ici faute de compilation).
+- `DataComponents.CUSTOM_DATA`/`CUSTOM_NAME`/`LORE` dans `FuturesItem` (le systeme de
+  composants de donnees qui remplace l'ancien NBT d'ItemStack depuis la 1.20.5).
+- `PlayerTeam#setPlayerPrefix` / `Scoreboard#addPlayerTeam` dans `ReputationManager`.
 
-Tout le reste du plugin Paper (GUIs graphiques, HUD, reputation, PNJ marchands, contrats
-a terme, journal...) reste a reecrire dans ce mod — c'est un gros chantier qui sera fait
-par etapes.
+Tout le reste du plugin Paper (GUIs graphiques, HUD, PNJ marchands) reste a reecrire dans
+ce mod — c'est un gros chantier qui sera fait par etapes.
 
 ## Build
 
