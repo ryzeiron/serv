@@ -155,10 +155,22 @@ indice "brûlant/chaud/tiède/froid" base sur la distance de Manhattan, recompen
 cas de reussite, xp de consolation en cas d'echec). Accessible via `/hack terminal` et
 depuis une 6e icone dans `HackerTerminalGUI`.
 
-Avec cette phase, l'intégralité du plugin Paper (contenu, gameplay, interface) est
-portee dans le mod Forge. Il ne reste qu'un vrai menu graphique pour le marchand PNJ
-(actuellement en chat cliquable, mais reutiliserait `DisplayMenu` de la meme facon si
-souhaite) — une amelioration cosmetique, pas une fonctionnalite manquante.
+Phase 11 : derniers details — Boussole du Marchand et menu graphique du marchand PNJ.
+
+- `MerchantCompassItem` / `MerchantCompassTracker` : une vraie boussole (pas une
+  lodestone) dont l'aiguille est reorientee toutes les 2s vers le villageois le plus
+  proche de la categorie actuellement la plus "en solde" (meme calcul de ratio prix
+  actuel/prix de base que le plugin Paper), via le composant `LODESTONE_TRACKER` avec
+  `tracked=false`. Donnee par `/marketitem boussole`. La variante "Graine Spéculative"
+  du plugin Paper reste non portee (doublon fantaisie du contrat a terme papier, voir
+  `/futures`).
+- `VillagerTradeGUI` : le marchand PNJ utilise maintenant `DisplayMenu` comme les autres
+  menus (une icone par item, clic gauche achete, clic droit vend, icone "Tout vendre" en
+  dernier slot), remplace l'ancien menu en chat cliquable. `VillagerCommands` (devenu
+  inutile) est supprime.
+
+Avec cette phase, l'intégralité du plugin Paper (contenu, gameplay, interface graphique)
+est portee dans le mod Forge — plus aucune fonctionnalite majeure ne manque.
 
 Points d'API Forge 1.21 recents utilises ici sans pouvoir etre compiles/verifies dans ce
 sandbox (a checker en premier en cas d'erreur de compilation) :
@@ -178,9 +190,12 @@ sandbox (a checker en premier en cas d'erreur de compilation) :
 - `DataComponents.CUSTOM_DATA`/`CUSTOM_NAME`/`LORE` dans `FuturesItem` (le systeme de
   composants de donnees qui remplace l'ancien NBT d'ItemStack depuis la 1.20.5).
 - `PlayerTeam#setPlayerPrefix` / `Scoreboard#addPlayerTeam` dans `ReputationManager`.
-- `VillagerData#getProfession()` dans `VillagerEvents` : suppose qu'il renvoie un
-  `Holder<VillagerProfession>` (d'ou l'appel `.value()`) plutot qu'un `VillagerProfession`
-  direct — a verifier en premier si `VillagerEvents` ne compile pas.
+- `VillagerData#getProfession()` dans `VillagerEvents`/`MerchantCompassTracker` : suppose
+  qu'il renvoie un `Holder<VillagerProfession>` (d'ou l'appel `.value()`) plutot qu'un
+  `VillagerProfession` direct — a verifier en premier si ces classes ne compilent pas.
+- `DataComponents.LODESTONE_TRACKER` / `LodestoneTracker` / `GlobalPos.of(...)` dans
+  `MerchantCompassItem` (meme famille de composants que `FuturesItem`, mais jamais
+  utilisee ailleurs dans ce mod pour un objet de suivi comme la boussole).
 
 ## Build
 

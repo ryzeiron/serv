@@ -8,8 +8,9 @@ import com.antonin.marketeconomy.command.JobCommands;
 import com.antonin.marketeconomy.command.JournalCommand;
 import com.antonin.marketeconomy.command.MineCommands;
 import com.antonin.marketeconomy.command.ModCommands;
-import com.antonin.marketeconomy.command.VillagerCommands;
+import com.antonin.marketeconomy.command.SpecialItemCommand;
 import com.antonin.marketeconomy.command.WarpCommands;
+import com.antonin.marketeconomy.items.MerchantCompassTracker;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
@@ -25,9 +26,11 @@ public final class ServerEvents {
     private static final int PRICE_UPDATE_INTERVAL_TICKS = 20 * 60;
     private static final int MINE_REGEN_INTERVAL_TICKS = 20 * 60 * 25;
     private static final int HUD_REFRESH_INTERVAL_TICKS = 20 * 2;
+    private static final int COMPASS_REFRESH_INTERVAL_TICKS = 20 * 2;
     private static int tickCounter = 0;
     private static int mineTickCounter = 0;
     private static int hudTickCounter = 0;
+    private static int compassTickCounter = 0;
 
     private ServerEvents() {
     }
@@ -51,8 +54,8 @@ public final class ServerEvents {
         WarpCommands.register(event.getDispatcher());
         FuturesCommands.register(event.getDispatcher(), event.getBuildContext());
         JournalCommand.register(event.getDispatcher());
-        VillagerCommands.register(event.getDispatcher(), event.getBuildContext());
         HudCommand.register(event.getDispatcher());
+        SpecialItemCommand.register(event.getDispatcher());
     }
 
     @SubscribeEvent
@@ -84,6 +87,12 @@ public final class ServerEvents {
         if (hudTickCounter >= HUD_REFRESH_INTERVAL_TICKS) {
             hudTickCounter = 0;
             MarketEconomyServer.get().getHudManager().refreshAll(ServerLifecycleHooks.getCurrentServer());
+        }
+
+        compassTickCounter++;
+        if (compassTickCounter >= COMPASS_REFRESH_INTERVAL_TICKS) {
+            compassTickCounter = 0;
+            MerchantCompassTracker.tick(ServerLifecycleHooks.getCurrentServer());
         }
     }
 }
