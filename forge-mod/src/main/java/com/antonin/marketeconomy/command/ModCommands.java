@@ -2,6 +2,7 @@ package com.antonin.marketeconomy.command;
 
 import com.antonin.marketeconomy.economy.BankManager;
 import com.antonin.marketeconomy.economy.EconomyManager;
+import com.antonin.marketeconomy.gui.MarketScreenGUI;
 import com.antonin.marketeconomy.market.MarketItem;
 import com.antonin.marketeconomy.market.MarketManager;
 import com.antonin.marketeconomy.server.MarketEconomyServer;
@@ -10,7 +11,6 @@ import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import java.util.Locale;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -20,8 +20,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
-// Commandes economiques de base : /market (liste des prix), /buy, /sell, /banque.
-// Le menu graphique du marche (GUI) viendra avec le portage du reste des interfaces.
+// Commandes economiques de base : /market (menu graphique), /buy, /sell (raccourcis rapides en
+// commande), /banque.
 public final class ModCommands {
 
     private ModCommands() {
@@ -55,13 +55,7 @@ public final class ModCommands {
 
     private static int runMarket(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
-        MarketManager market = MarketEconomyServer.get().getMarketManager();
-        player.sendSystemMessage(Component.literal("§6=== Marché (tendance " + market.getMarketTrendArrow() + ") ==="));
-        for (MarketItem item : market.getItems().values()) {
-            player.sendSystemMessage(Component.literal(String.format(Locale.US,
-                    "§7%-22s §fAchat: §a%.2f §7| Vente: §c%.2f §7| Stock: §f%d §7%s",
-                    item.getDisplayName(), item.getBuyPrice(), item.getSellPrice(), item.getStock(), item.getTrendArrow())));
-        }
+        MarketScreenGUI.open(player);
         return 1;
     }
 

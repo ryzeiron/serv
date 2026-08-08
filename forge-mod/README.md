@@ -117,12 +117,36 @@ vendre]`) plutot qu'un inventaire graphique.
 - `VillagerCommands` — `/villagerbuy`, `/villagersell`, `/villagersellall <categorie>`
   (equivalent des clics du menu graphique original), pas destinees a etre tapees a la main.
 
-Pas encore porte : les menus GUI graphiques (inventaires cliquables — `/market`, `/metier`,
-le terminal Hacker et le marchand PNJ restent tous en chat cliquable pour l'instant), le
-HUD, le mini-jeu de `/hack terminal`.
+Phase 8 : menus GUI graphiques (inventaires cliquables), pour `/market`, `/metier` et le
+terminal Hacker (le marchand PNJ reste en chat cliquable pour l'instant, meme approche
+applicable si besoin).
+
+- `DisplayMenu` — menu "coffre" generique et reutilisable : une grille d'icones cliquables
+  au-dessus de l'inventaire du joueur. Astuce qui evite tout code cote client : en sous-
+  classant directement `ChestMenu` et en lui passant un `MenuType.GENERIC_9xN` vanilla, le
+  client affiche automatiquement l'ecran de coffre standard (deja enregistre par le jeu) —
+  pas besoin d'enregistrer un `MenuType` ni d'ecrire un `Screen` custom. Les clics sur la
+  grille du haut sont intercepted (`clicked()` surchargee) pour executer une action au lieu
+  de deplacer l'item ; les clics sur l'inventaire du joueur (bas de l'ecran) fonctionnent
+  normalement.
+- `MarketScreenGUI` — une icone par item du marche (prix/stock/tendance en lore), clic
+  gauche achete 1, clic droit vend 1. `/market` l'ouvre desormais directement.
+- `JobMenuGUI` — une icone par metier (Hacker/Mineur), avec le niveau et l'xp en lore si
+  deja actif ; cliquer choisit ce metier. `/metier` l'ouvre desormais directement.
+- `HackerTerminalGUI` — les 5 capacites du Hacker en icones ; "brouiller la trace"
+  s'execute directement au clic, les autres (qui ont besoin d'un item ou d'un joueur en
+  argument) ferment le menu et suggerent la commande a completer dans le chat. Remplace
+  l'ancien `HackerTerminal` tout-en-chat (supprime).
+
+Pas encore porte : le HUD, le mini-jeu de `/hack terminal`, et un vrai menu graphique pour
+le marchand PNJ (actuellement en chat cliquable, mais reutiliserait `DisplayMenu` de la
+meme facon si souhaite).
 
 Points d'API Forge 1.21 recents utilises ici sans pouvoir etre compiles/verifies dans ce
 sandbox (a checker en premier en cas d'erreur de compilation) :
+- `ChestMenu`'s protected constructor `(MenuType<?>, int, Inventory, Container, int)` dans
+  `DisplayMenu` (utilise en le sous-classant directement — le point le plus risque de la
+  phase 8, jamais verifie par compilation ici).
 - `OrdinateurBlock#useWithoutItem` (le clic droit sans item special sur un bloc a ete
   scinde de `use()` vers `useWithoutItem`/`useItemOn` autour de la 1.20.5).
 - `TickEvent.ServerTickEvent` / `TickEvent.PlayerTickEvent` dans `ServerEvents` et
@@ -140,9 +164,8 @@ sandbox (a checker en premier en cas d'erreur de compilation) :
   `Holder<VillagerProfession>` (d'ou l'appel `.value()`) plutot qu'un `VillagerProfession`
   direct — a verifier en premier si `VillagerEvents` ne compile pas.
 
-Tout le reste du plugin Paper (GUIs graphiques cliquables, HUD, mini-jeu du terminal
-Hacker) reste a reecrire dans ce mod si souhaite — le contenu/gameplay est fonctionnellement
-complet, il ne manque que la couche visuelle.
+Il ne reste que le HUD et le mini-jeu du terminal Hacker — tout le contenu/gameplay et
+l'essentiel de l'interface (menus cliquables) sont maintenant portes.
 
 ## Build
 

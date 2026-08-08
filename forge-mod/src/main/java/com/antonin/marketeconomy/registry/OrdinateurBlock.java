@@ -1,6 +1,6 @@
 package com.antonin.marketeconomy.registry;
 
-import com.antonin.marketeconomy.hacker.HackerTerminal;
+import com.antonin.marketeconomy.gui.HackerTerminalGUI;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
@@ -54,7 +54,7 @@ public class OrdinateurBlock extends HorizontalDirectionalBlock {
             return InteractionResult.SUCCESS;
         }
         if (player instanceof ServerPlayer serverPlayer) {
-            HackerTerminal.open(serverPlayer);
+            HackerTerminalGUI.open(serverPlayer);
         }
         return InteractionResult.CONSUME;
     }
