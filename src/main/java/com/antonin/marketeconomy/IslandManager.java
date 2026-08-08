@@ -44,6 +44,11 @@ public class IslandManager {
         return this.islands.containsKey(uuid);
     }
 
+    // Consulte l'emplacement de l'ile sans en creer une (contrairement a getOrCreateIsland)
+    public Location getIslandLocation(UUID uuid) {
+        return this.islands.get(uuid);
+    }
+
     public Location getOrCreateIsland(Player player) {
         Location existing = this.islands.get(player.getUniqueId());
         if (existing != null) {

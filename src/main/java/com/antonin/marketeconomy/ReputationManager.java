@@ -84,12 +84,23 @@ public class ReputationManager {
         return title;
     }
 
-    // Applique le titre en prefixe d'equipe scoreboard (visible au-dessus de la tete et dans le tab)
+    // Applique le titre en prefixe d'equipe scoreboard (visible au-dessus de la tete et dans le tab).
+    // Les joueurs avec le HUD active ont chacun leur propre Scoreboard (independant du principal),
+    // donc on pousse le prefixe sur le scoreboard actif de chaque joueur en ligne plutot que
+    // seulement sur le scoreboard principal
     public void applyTitle(Player player, String title) {
         if (title == null) {
             return;
         }
-        Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
+        for (Player viewer : Bukkit.getOnlinePlayers()) {
+            this.applyTitleOnScoreboard(viewer.getScoreboard(), player, title);
+        }
+    }
+
+    public void applyTitleOnScoreboard(Scoreboard board, Player player, String title) {
+        if (title == null || board == null) {
+            return;
+        }
         String teamName = ("mt" + player.getUniqueId().toString().replace("-", "")).substring(0, 16);
         Team team = board.getTeam(teamName);
         if (team == null) {

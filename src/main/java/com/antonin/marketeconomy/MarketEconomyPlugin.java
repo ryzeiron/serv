@@ -5,6 +5,7 @@ import com.antonin.marketeconomy.commands.BankCommand;
 import com.antonin.marketeconomy.commands.BuyCommand;
 import com.antonin.marketeconomy.commands.FuturesCommand;
 import com.antonin.marketeconomy.commands.HackCommand;
+import com.antonin.marketeconomy.commands.HudCommand;
 import com.antonin.marketeconomy.commands.IslandCommand;
 import com.antonin.marketeconomy.commands.JobCommand;
 import com.antonin.marketeconomy.commands.JournalCommand;
@@ -38,6 +39,7 @@ extends JavaPlugin {
     private IslandManager islandManager;
     private JobManager jobManager;
     private BankManager bankManager;
+    private HudManager hudManager;
 
     public void onEnable() {
         this.saveDefaultConfig();
@@ -51,6 +53,7 @@ extends JavaPlugin {
         this.islandManager = new IslandManager(this);
         this.jobManager = new JobManager(this);
         this.bankManager = new BankManager(this);
+        this.hudManager = new HudManager(this);
 
         this.getCommand("market").setExecutor((CommandExecutor)new MarketCommand(this));
         this.getCommand("buy").setExecutor((CommandExecutor)new BuyCommand(this));
@@ -68,6 +71,7 @@ extends JavaPlugin {
         this.getCommand("metier").setExecutor((CommandExecutor)new JobCommand(this));
         this.getCommand("banque").setExecutor((CommandExecutor)new BankCommand(this));
         this.getCommand("hack").setExecutor((CommandExecutor)new HackCommand(this));
+        this.getCommand("hud").setExecutor((CommandExecutor)new HudCommand(this));
 
         Bukkit.getPluginManager().registerEvents((Listener)new MarketGUIListener(this), (Plugin)this);
         Bukkit.getPluginManager().registerEvents((Listener)new VillagerInteractionListener(this), (Plugin)this);
@@ -78,6 +82,7 @@ extends JavaPlugin {
         long intervalTicks = this.getConfig().getLong("price-update-interval", 60L) * 20L;
         Bukkit.getScheduler().runTaskTimer((Plugin)this, () -> this.marketManager.recalculateAll(), intervalTicks, intervalTicks);
         Bukkit.getScheduler().runTaskTimer((Plugin)this, new MerchantCompassTracker(this), 40L, 40L);
+        Bukkit.getScheduler().runTaskTimer((Plugin)this, () -> this.hudManager.refreshAll(), 40L, 40L);
 
         this.getLogger().info("MarketEconomy active avec " + this.marketManager.getItems().size() + " items echangeables.");
     }
@@ -91,6 +96,9 @@ extends JavaPlugin {
         }
         if (this.bankManager != null) {
             this.bankManager.save();
+        }
+        if (this.hudManager != null) {
+            this.hudManager.save();
         }
         this.getLogger().info("MarketEconomy desactive.");
     }
@@ -121,5 +129,9 @@ extends JavaPlugin {
 
     public BankManager getBankManager() {
         return this.bankManager;
+    }
+
+    public HudManager getHudManager() {
+        return this.hudManager;
     }
 }

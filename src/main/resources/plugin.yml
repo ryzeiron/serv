@@ -55,8 +55,8 @@ commands:
     usage: /setpvp
     permission: marketeconomy.admin
   marketadmin:
-    description: Commandes admin (suppression de zone/structure)
-    usage: /marketadmin clearzone <tailleX> <tailleY> <tailleZ> [confirm]
+    description: Commandes admin (suppression de zone/structure, argent)
+    usage: /marketadmin <clearzone <tailleX> <tailleY> <tailleZ> [confirm]|givemoney <joueur> <montant>>
     permission: marketeconomy.admin
   metier:
     description: Choisis ou consulte ton metier
@@ -70,6 +70,10 @@ commands:
   hack:
     description: Capacites du metier Hacker
     usage: /hack <market|price|scramble|wiretap|banque|terminal> [args]
+    permission: marketeconomy.use
+  hud:
+    description: Active/desactive le HUD (solde, banque, metier, marche, ile)
+    usage: /hud [on|off]
     permission: marketeconomy.use
 
 permissions:

@@ -1,8 +1,10 @@
 package com.antonin.marketeconomy.commands;
 
 import com.antonin.marketeconomy.MarketEconomyPlugin;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
@@ -23,7 +25,14 @@ public class MarketAdminCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length == 0 || !args[0].equalsIgnoreCase("clearzone")) {
+        if (args.length == 0) {
+            sender.sendMessage("§6[Marché] §eUsage: /marketadmin <clearzone|givemoney> ...");
+            return true;
+        }
+        if (args[0].equalsIgnoreCase("givemoney")) {
+            return this.handleGiveMoney(sender, args);
+        }
+        if (!args[0].equalsIgnoreCase("clearzone")) {
             sender.sendMessage("§6[Marché] §eUsage: /marketadmin clearzone <tailleX> <tailleY> <tailleZ> [confirm]");
             return true;
         }
@@ -114,6 +123,39 @@ public class MarketAdminCommand implements CommandExecutor {
                 }
             }
         }.runTaskTimer(plugin, 1L, 1L);
+        return true;
+    }
+
+    @SuppressWarnings("deprecation")
+    private boolean handleGiveMoney(CommandSender sender, String[] args) {
+        if (!this.plugin.getEconomyHook().isEnabled()) {
+            sender.sendMessage("§6[Marché] §cLe systeme d'economie (Vault) n'est pas disponible.");
+            return true;
+        }
+        if (args.length < 3) {
+            sender.sendMessage("§6[Marché] §eUsage: /marketadmin givemoney <joueur> <montant>");
+            return true;
+        }
+        String targetName = args[1];
+        double amount;
+        try {
+            amount = Double.parseDouble(args[2]);
+        } catch (NumberFormatException e) {
+            sender.sendMessage("§6[Marché] §cMontant invalide.");
+            return true;
+        }
+        if (amount <= 0.0) {
+            sender.sendMessage("§6[Marché] §cLe montant doit être positif.");
+            return true;
+        }
+        OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
+        this.plugin.getEconomyHook().deposit(target, amount);
+        sender.sendMessage("§6[Marché] §aDonné " + this.plugin.getEconomyHook().format(amount) + " à "
+                + (target.getName() != null ? target.getName() : targetName) + ".");
+        Player online = target.getPlayer();
+        if (online != null) {
+            online.sendMessage("§6[Marché] §eTu as reçu " + this.plugin.getEconomyHook().format(amount) + " d'un admin.");
+        }
         return true;
     }
 }
