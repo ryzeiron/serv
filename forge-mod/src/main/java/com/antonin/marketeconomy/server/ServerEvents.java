@@ -5,6 +5,7 @@ import com.antonin.marketeconomy.command.HackCommands;
 import com.antonin.marketeconomy.command.JobCommands;
 import com.antonin.marketeconomy.command.MineCommands;
 import com.antonin.marketeconomy.command.ModCommands;
+import com.antonin.marketeconomy.command.WarpCommands;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
@@ -39,6 +40,7 @@ public final class ServerEvents {
         JobCommands.register(event.getDispatcher());
         HackCommands.register(event.getDispatcher());
         MineCommands.register(event.getDispatcher());
+        WarpCommands.register(event.getDispatcher());
     }
 
     @SubscribeEvent

@@ -64,9 +64,28 @@ statique :
 - `/mine spawn <1-4>` (permission niveau 2, comme `/gamemode`) genere une mine à la
   position du joueur.
 
-Pas encore porte : le mini-jeu de `/hack terminal` (grille de piratage contre du loot,
-necessite un vrai GUI graphique), les contrats a terme, le journal boursier, le menu GUI
-du marche.
+Phase 5 : structures et reseau de teleportation fixe. Bonne nouvelle : le format NBT de
+structure Minecraft (DataVersion/size/palette/blocks/entities) est le meme cote
+Paper et cote Forge/vanilla — les structures deja generees pour le plugin Paper
+(`structures/*.nbt` a la racine du repo) sont directement reutilisees, pas regenerees :
+
+- `data/marketeconomy/structure/{spawn_hub,spawn_castle,pvp_island,place_du_marche}.nbt`
+  — copiees telles quelles. Ce sont de grosses structures statiques (le chateau de spawn
+  fait ~700k blocs) qu'un admin place une seule fois avec la commande vanilla
+  `/place structure marketeconomy:<nom>`, puis enregistre l'emplacement avec `/sethub` ou
+  `/setpvp` — exactement le meme flux que sous Paper, aucun code Java necessaire pour
+  celles-la.
+- `data/marketeconomy/structure/starter_island.nbt` — copiee aussi, mais celle-ci EST
+  posee par du code (`IslandManager`, via `StructureTemplateManager`) car chaque joueur
+  doit en recevoir une automatiquement, sur une grille espacee de 400 blocs (comme
+  l'original), avec le meme coffre de depart rempli (sapin, pain, pierre, bois, seaux).
+- `WarpManager` — persistence JSON du hub et de l'ile PvP (position + dimension + yaw/pitch).
+- Commandes `/spawn`, `/pvp`, `/sethub`, `/setpvp` (permission niveau 2), `/ile`.
+
+Pas encore porte : les menus GUI graphiques (inventaires cliquables — `/market`, `/metier`
+et le terminal Hacker restent en chat cliquable pour l'instant), le HUD, le mini-jeu de
+`/hack terminal`, les contrats a terme, le journal boursier, la reputation et les PNJ
+marchands.
 
 Points d'API Forge 1.21 recents utilises ici sans pouvoir etre compiles/verifies dans ce
 sandbox (a checker en premier en cas d'erreur de compilation) :
@@ -77,10 +96,13 @@ sandbox (a checker en premier en cas d'erreur de compilation) :
   remplaces par des variantes `.Pre`/`.Post` dans le Forge exact utilise).
 - `BlockEvent.BreakEvent` importe depuis `net.minecraftforge.event.level` (le package a
   ete renomme depuis `net.minecraftforge.event.world` a un moment de la 1.20.x).
+- `StructureTemplateManager#get(ResourceLocation)` / `StructureTemplate#placeInWorld(...)`
+  dans `IslandManager` (API de placement de structure, stable depuis longtemps mais pas
+  verifiee ici faute de compilation).
 
-Tout le reste du plugin Paper (GUIs graphiques, HUD, structures de spawn/iles/PvP,
-reputation, PNJ marchands, contrats a terme, journal...) reste a reecrire dans ce mod —
-c'est un gros chantier qui sera fait par etapes.
+Tout le reste du plugin Paper (GUIs graphiques, HUD, reputation, PNJ marchands, contrats
+a terme, journal...) reste a reecrire dans ce mod — c'est un gros chantier qui sera fait
+par etapes.
 
 ## Build
 

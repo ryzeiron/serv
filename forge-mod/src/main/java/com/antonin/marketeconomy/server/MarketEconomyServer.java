@@ -3,9 +3,11 @@ package com.antonin.marketeconomy.server;
 import com.antonin.marketeconomy.economy.BankManager;
 import com.antonin.marketeconomy.economy.EconomyManager;
 import com.antonin.marketeconomy.hacker.HackerAbilityService;
+import com.antonin.marketeconomy.island.IslandManager;
 import com.antonin.marketeconomy.job.JobManager;
 import com.antonin.marketeconomy.market.MarketManager;
 import com.antonin.marketeconomy.mine.MineManager;
+import com.antonin.marketeconomy.warp.WarpManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
 
@@ -21,6 +23,8 @@ public class MarketEconomyServer {
     private final JobManager jobManager;
     private final HackerAbilityService hackerAbilityService;
     private final MineManager mineManager;
+    private final WarpManager warpManager;
+    private final IslandManager islandManager;
 
     private MarketEconomyServer(MinecraftServer server) {
         var dataDir = server.getWorldPath(LevelResource.ROOT).resolve("marketeconomy");
@@ -30,6 +34,8 @@ public class MarketEconomyServer {
         this.jobManager = new JobManager(dataDir.resolve("jobs.json"));
         this.hackerAbilityService = new HackerAbilityService(this.jobManager, this.marketManager, this.economyManager, this.bankManager);
         this.mineManager = new MineManager(dataDir.resolve("mines.json"));
+        this.warpManager = new WarpManager(dataDir.resolve("warps.json"));
+        this.islandManager = new IslandManager(dataDir.resolve("islands.json"));
     }
 
     public static void start(MinecraftServer server) {
@@ -44,6 +50,8 @@ public class MarketEconomyServer {
         instance.bankManager.save();
         instance.jobManager.save();
         instance.mineManager.save();
+        instance.warpManager.save();
+        instance.islandManager.save();
         instance = null;
     }
 
@@ -73,5 +81,13 @@ public class MarketEconomyServer {
 
     public MineManager getMineManager() {
         return this.mineManager;
+    }
+
+    public WarpManager getWarpManager() {
+        return this.warpManager;
+    }
+
+    public IslandManager getIslandManager() {
+        return this.islandManager;
     }
 }
