@@ -57,10 +57,6 @@ public class SpecialItemCommand implements CommandExecutor {
             player.sendMessage("§cLe systeme d'economie (Vault) n'est pas disponible.");
             return;
         }
-        if (this.plugin.getMarketManager().isSuspended(player.getUniqueId())) {
-            player.sendMessage("§cTon acces au marche est suspendu (" + this.plugin.getMarketManager().getSuspensionRemainingSeconds(player.getUniqueId()) + "s restantes).");
-            return;
-        }
 
         MarketManager manager = this.plugin.getMarketManager();
         MarketItem wheat = manager.getItem(Material.WHEAT);

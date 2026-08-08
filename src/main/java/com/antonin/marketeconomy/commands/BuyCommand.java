@@ -27,10 +27,6 @@ implements CommandExecutor {
             player.sendMessage("\u00a7cLe systeme d'economie (Vault) n'est pas disponible.");
             return true;
         }
-        if (this.plugin.getMarketManager().isSuspended(player.getUniqueId())) {
-            player.sendMessage("\u00a7cTon acces au marche est suspendu (" + this.plugin.getMarketManager().getSuspensionRemainingSeconds(player.getUniqueId()) + "s restantes).");
-            return true;
-        }
         if (args.length < 1) {
             player.sendMessage("\u00a7cUtilisation: /buy <item> <quantite>");
             return true;

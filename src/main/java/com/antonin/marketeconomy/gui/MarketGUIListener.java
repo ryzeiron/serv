@@ -62,6 +62,16 @@ public class MarketGUIListener implements Listener {
             return;
         }
 
+        if (holder.isSellAllButton(slot)) {
+            if (!this.economyHook.isEnabled()) {
+                player.sendMessage("§cLe systeme d'economie (Vault) n'est pas disponible.");
+                return;
+            }
+            this.handleSellAll(player, holder.getCategory());
+            MarketGUI.openCategoryMenu(player, this.marketManager, holder.getCategory());
+            return;
+        }
+
         Material material = holder.getMaterialAt(slot);
         if (material == null) {
             return;
@@ -72,10 +82,6 @@ public class MarketGUIListener implements Listener {
         }
         if (!this.economyHook.isEnabled()) {
             player.sendMessage("§cLe systeme d'economie (Vault) n'est pas disponible.");
-            return;
-        }
-        if (this.marketManager.isSuspended(player.getUniqueId())) {
-            player.sendMessage("§cTon acces au marche est suspendu (" + this.marketManager.getSuspensionRemainingSeconds(player.getUniqueId()) + "s restantes).");
             return;
         }
         if (event.getClick() == ClickType.LEFT) {
@@ -113,7 +119,40 @@ public class MarketGUIListener implements Listener {
         player.getInventory().removeItem(toRemove);
         this.marketManager.recordSale(player, item, 1L, price);
         this.reputationManager.registerTrade(player, price);
-        this.economyHook.deposit(player, price);
-        player.sendMessage("§aVendu 1x " + item.getDisplayName() + " pour " + this.economyHook.format(price));
+        double net = this.marketManager.applyBountyCut(player, price);
+        this.economyHook.deposit(player, net);
+        player.sendMessage("§aVendu 1x " + item.getDisplayName() + " pour " + this.economyHook.format(net));
+    }
+
+    private void handleSellAll(Player player, MarketCategory category) {
+        double grandTotal = 0.0;
+        int itemTypesSold = 0;
+        long unitsSold = 0L;
+
+        for (MarketItem item : this.marketManager.getItems().values()) {
+            if (item.getCategory() != category) {
+                continue;
+            }
+            int count = player.getInventory().all(item.getMaterial()).values().stream().mapToInt(ItemStack::getAmount).sum();
+            if (count <= 0) {
+                continue;
+            }
+            double total = Math.round(item.getSellPrice() * count * 100.0) / 100.0;
+            player.getInventory().remove(item.getMaterial());
+            this.marketManager.recordSale(player, item, count, total);
+            this.reputationManager.registerTrade(player, total);
+            grandTotal += total;
+            itemTypesSold++;
+            unitsSold += count;
+        }
+
+        if (itemTypesSold == 0) {
+            player.sendMessage("§7Tu n'as rien à vendre dans ce rayon.");
+            return;
+        }
+
+        double net = this.marketManager.applyBountyCut(player, grandTotal);
+        this.economyHook.deposit(player, net);
+        player.sendMessage("§aVendu " + unitsSold + " item(s) (" + itemTypesSold + " type(s)) pour " + this.economyHook.format(net));
     }
 }

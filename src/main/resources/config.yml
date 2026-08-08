@@ -30,15 +30,20 @@ events:
   volatility-multiplier: 2.0
 
 # Detection de manipulation de marche (pump and dump) : si un joueur represente
-# une trop grosse part du volume d'un item sur un cycle, il est suspendu du trading
+# une trop grosse part du volume d'un item sur un cycle, il est repere (aucun
+# blocage automatique) et devient la cible possible d'une prime (/prime <joueur>)
 manipulation:
   enabled: true
   # Volume total minimum sur un item avant de verifier (evite les faux positifs sur les items peu actifs)
   min-volume: 40
   # Part du volume total (0.0 a 1.0) au-dela de laquelle un joueur est flagge
   share-threshold: 0.6
-  # Duree de la suspension du trading, en secondes
-  suspension-seconds: 120
+  # Duree pendant laquelle un joueur flagge peut etre cible par /prime, en secondes
+  bounty-eligible-seconds: 300
+  # Part des ventes de la cible reversee au joueur qui a pose la prime (0.0 a 1.0)
+  bounty-cut-share: 0.10
+  # Duree d'une prime active, en secondes
+  bounty-duration-seconds: 1200
 
 # Journal du marche (/journal) : titres generes automatiquement a chaque recalcul de prix
 journal:

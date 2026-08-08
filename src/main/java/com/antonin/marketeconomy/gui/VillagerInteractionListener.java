@@ -3,6 +3,7 @@ package com.antonin.marketeconomy.gui;
 import com.antonin.marketeconomy.MarketEconomyPlugin;
 import com.antonin.marketeconomy.MarketManager;
 import com.antonin.marketeconomy.ReputationManager;
+import com.antonin.marketeconomy.model.MarketCategory;
 import com.antonin.marketeconomy.model.MarketItem;
 import com.antonin.marketeconomy.storage.EconomyHook;
 import java.util.UUID;
@@ -45,10 +46,6 @@ public class VillagerInteractionListener implements Listener {
             return;
         }
         UUID uuid = player.getUniqueId();
-        if (this.marketManager.isSuspended(uuid)) {
-            player.sendMessage("§cTon acces au marche est suspendu (" + this.marketManager.getSuspensionRemainingSeconds(uuid) + "s restantes).");
-            return;
-        }
 
         player.sendMessage(this.reputationManager.buildGreeting(uuid));
         if (this.reputationManager.isHostile(uuid)) {
@@ -94,6 +91,13 @@ public class VillagerInteractionListener implements Listener {
             return;
         }
         Player player = (Player) humanEntity;
+        UUID uuid = player.getUniqueId();
+
+        if (holder.isSellAllButton(event.getSlot())) {
+            this.handleSellAll(player, holder.getCategory(), uuid);
+            VillagerTradeGUI.reopen(player, holder.getCategory(), this.marketManager, this.reputationManager);
+            return;
+        }
 
         Material material = holder.getMaterialAt(event.getSlot());
         if (material == null) {
@@ -104,7 +108,6 @@ public class VillagerInteractionListener implements Listener {
             return;
         }
 
-        UUID uuid = player.getUniqueId();
         if (event.getClick() == ClickType.LEFT) {
             this.handleBuy(player, item, uuid);
         } else if (event.getClick() == ClickType.RIGHT) {
@@ -139,8 +142,42 @@ public class VillagerInteractionListener implements Listener {
         player.getInventory().removeItem(toRemove);
         this.marketManager.recordSale(player, item, 1L, price);
         this.reputationManager.registerTrade(player, price);
-        this.economyHook.deposit(player, price);
-        player.sendMessage("§aVendu 1x " + item.getDisplayName() + " pour " + this.economyHook.format(price));
+        double net = this.marketManager.applyBountyCut(player, price);
+        this.economyHook.deposit(player, net);
+        player.sendMessage("§aVendu 1x " + item.getDisplayName() + " pour " + this.economyHook.format(net));
+    }
+
+    private void handleSellAll(Player player, MarketCategory category, UUID uuid) {
+        double sellMultiplier = this.reputationManager.getSellMultiplier(uuid);
+        double grandTotal = 0.0;
+        int itemTypesSold = 0;
+        long unitsSold = 0L;
+
+        for (MarketItem item : this.marketManager.getItems().values()) {
+            if (item.getCategory() != category) {
+                continue;
+            }
+            int count = player.getInventory().all(item.getMaterial()).values().stream().mapToInt(ItemStack::getAmount).sum();
+            if (count <= 0) {
+                continue;
+            }
+            double total = round2(item.getSellPrice() * sellMultiplier * count);
+            player.getInventory().remove(item.getMaterial());
+            this.marketManager.recordSale(player, item, count, total);
+            this.reputationManager.registerTrade(player, total);
+            grandTotal += total;
+            itemTypesSold++;
+            unitsSold += count;
+        }
+
+        if (itemTypesSold == 0) {
+            player.sendMessage("§7Tu n'as rien à vendre à ce marchand.");
+            return;
+        }
+
+        double net = this.marketManager.applyBountyCut(player, grandTotal);
+        this.economyHook.deposit(player, net);
+        player.sendMessage("§aVendu " + unitsSold + " item(s) (" + itemTypesSold + " type(s)) pour " + this.economyHook.format(net));
     }
 
     private static double round2(double value) {

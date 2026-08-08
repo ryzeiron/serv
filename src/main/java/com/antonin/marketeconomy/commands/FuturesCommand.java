@@ -41,10 +41,6 @@ public class FuturesCommand implements CommandExecutor {
             player.sendMessage("§cLe systeme d'economie (Vault) n'est pas disponible.");
             return true;
         }
-        if (this.plugin.getMarketManager().isSuspended(player.getUniqueId())) {
-            player.sendMessage("§cTon acces au marche est suspendu (" + this.plugin.getMarketManager().getSuspensionRemainingSeconds(player.getUniqueId()) + "s restantes).");
-            return true;
-        }
 
         Material material = Material.matchMaterial(args[1]);
         if (material == null) {

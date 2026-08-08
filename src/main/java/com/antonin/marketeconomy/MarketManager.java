@@ -1,5 +1,6 @@
 package com.antonin.marketeconomy;
 
+import com.antonin.marketeconomy.model.Bounty;
 import com.antonin.marketeconomy.model.FuturesContract;
 import com.antonin.marketeconomy.model.MarketCategory;
 import com.antonin.marketeconomy.model.MarketEvent;
@@ -16,6 +17,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
@@ -49,9 +51,14 @@ public class MarketManager {
     private final boolean manipulationEnabled;
     private final long manipulationMinVolume;
     private final double manipulationShareThreshold;
-    private final long manipulationSuspensionMillis;
     private final Map<UUID, Map<Material, long[]>> playerActivity = new HashMap<>();
-    private final Map<UUID, Long> suspensionUntil = new HashMap<>();
+
+    // --- Primes (contrats places sur un joueur repere pour manipulation) ---
+    private final long bountyEligibleMillis;
+    private final double bountyCutShare;
+    private final long bountyDurationMillis;
+    private final Map<UUID, Long> bountyEligibleUntil = new HashMap<>();
+    private final Map<UUID, Bounty> activeBounties = new HashMap<>();
 
     // --- Journal boursier ---
     private final int headlineHistoryLength;
@@ -84,7 +91,10 @@ public class MarketManager {
         this.manipulationEnabled = config.getBoolean("manipulation.enabled", true);
         this.manipulationMinVolume = config.getLong("manipulation.min-volume", 40L);
         this.manipulationShareThreshold = config.getDouble("manipulation.share-threshold", 0.6);
-        this.manipulationSuspensionMillis = config.getLong("manipulation.suspension-seconds", 120L) * 1000L;
+
+        this.bountyEligibleMillis = config.getLong("manipulation.bounty-eligible-seconds", 300L) * 1000L;
+        this.bountyCutShare = config.getDouble("manipulation.bounty-cut-share", 0.10);
+        this.bountyDurationMillis = config.getLong("manipulation.bounty-duration-seconds", 1200L) * 1000L;
 
         this.headlineHistoryLength = Math.max(1, config.getInt("journal.history-length", 30));
         this.headlineThresholdPercent = config.getDouble("journal.headline-threshold-percent", 3.0);
@@ -201,19 +211,6 @@ public class MarketManager {
 
     // --- Manipulation de marche ---
 
-    public boolean isSuspended(UUID uuid) {
-        Long until = this.suspensionUntil.get(uuid);
-        return until != null && until > System.currentTimeMillis();
-    }
-
-    public long getSuspensionRemainingSeconds(UUID uuid) {
-        Long until = this.suspensionUntil.get(uuid);
-        if (until == null) {
-            return 0L;
-        }
-        return Math.max(0L, (until - System.currentTimeMillis()) / 1000L);
-    }
-
     private void checkManipulation(MarketItem item) {
         if (!this.manipulationEnabled) {
             return;
@@ -236,16 +233,88 @@ public class MarketManager {
         }
     }
 
+    // Ne bloque plus le trading : rend simplement le joueur "primable" pendant une fenetre de temps
     private void flagManipulation(UUID uuid, MarketItem item, double share) {
-        this.suspensionUntil.put(uuid, System.currentTimeMillis() + this.manipulationSuspensionMillis);
+        this.bountyEligibleUntil.put(uuid, System.currentTimeMillis() + this.bountyEligibleMillis);
         Player player = Bukkit.getPlayer(uuid);
         String name = player != null ? player.getName() : "Un joueur";
         Bukkit.broadcastMessage("§4[Marché] §cActivité suspecte détectée sur " + item.getDisplayName()
-                + " (" + Math.round(share * 100) + "% du volume) — trading suspendu pour " + name + ".");
+                + " (" + Math.round(share * 100) + "% du volume) — " + name
+                + " peut être ciblé par une prime (§7/prime " + name + "§c) pendant "
+                + (this.bountyEligibleMillis / 1000L) + "s.");
         if (player != null) {
             player.sendMessage("§cTon activité sur le marché ressemble à de la manipulation de prix. "
-                    + "Trading suspendu " + (this.manipulationSuspensionMillis / 1000L) + "s.");
+                    + "Les autres joueurs peuvent placer une prime sur toi pendant "
+                    + (this.bountyEligibleMillis / 1000L) + "s.");
         }
+    }
+
+    // --- Primes ---
+
+    public boolean isBountyEligible(UUID uuid) {
+        Long until = this.bountyEligibleUntil.get(uuid);
+        return until != null && until > System.currentTimeMillis();
+    }
+
+    public Bounty getBounty(UUID targetUuid) {
+        return this.activeBounties.get(targetUuid);
+    }
+
+    // Place une prime sur "target" si elle est actuellement primable et pas deja ciblee ; renvoie
+    // un message d'erreur, ou null si la prime a bien ete posee
+    public String placeBounty(Player placer, Player target) {
+        if (placer.getUniqueId().equals(target.getUniqueId())) {
+            return "Tu ne peux pas placer une prime sur toi-même.";
+        }
+        if (!this.isBountyEligible(target.getUniqueId())) {
+            return target.getName() + " n'est pas actuellement recherché pour manipulation de marché.";
+        }
+        if (this.activeBounties.containsKey(target.getUniqueId())) {
+            return "Un contrat est déjà actif sur " + target.getName() + ".";
+        }
+        long expiresAt = System.currentTimeMillis() + this.bountyDurationMillis;
+        this.activeBounties.put(target.getUniqueId(), new Bounty(target.getUniqueId(), placer.getUniqueId(), this.bountyCutShare, expiresAt));
+        this.bountyEligibleUntil.remove(target.getUniqueId());
+        Bukkit.broadcastMessage("§4[Marché] §c" + placer.getName() + " place un contrat sur la tête de " + target.getName()
+                + " ! " + Math.round(this.bountyCutShare * 100) + "% de ses ventes lui reviendront pendant "
+                + (this.bountyDurationMillis / 60_000L) + " min.");
+        return null;
+    }
+
+    // A appeler avant de crediter une vente : redirige la part de la prime vers le placeur et
+    // renvoie ce qu'il reste a verser au vendeur
+    public double applyBountyCut(Player seller, double saleAmount) {
+        Bounty bounty = this.activeBounties.get(seller.getUniqueId());
+        if (bounty == null) {
+            return saleAmount;
+        }
+        double cut = saleAmount * bounty.getCutShare();
+        if (this.economyHook != null && this.economyHook.isEnabled() && cut > 0.0) {
+            OfflinePlayer placer = Bukkit.getOfflinePlayer(bounty.getPlacer());
+            this.economyHook.deposit(placer, cut);
+            Player onlinePlacer = Bukkit.getPlayer(bounty.getPlacer());
+            if (onlinePlacer != null) {
+                onlinePlacer.sendMessage("§6[Prime] §eTa cible " + seller.getName() + " a vendu — tu touches "
+                        + this.economyHook.format(cut) + ".");
+            }
+        }
+        return saleAmount - cut;
+    }
+
+    private void tickBounties() {
+        if (this.activeBounties.isEmpty()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        this.activeBounties.entrySet().removeIf(entry -> {
+            if (!entry.getValue().isExpired(now)) {
+                return false;
+            }
+            Player target = Bukkit.getPlayer(entry.getKey());
+            String name = target != null ? target.getName() : "un joueur recherché";
+            Bukkit.broadcastMessage("§6[Marché] §eLe contrat sur " + name + " a expiré.");
+            return true;
+        });
     }
 
     // --- Journal boursier ---
@@ -355,6 +424,7 @@ public class MarketManager {
         this.tickEvent();
         this.generateMoveHeadline(biggestMoveItem, biggestMoveChangePercent);
         this.tickContracts();
+        this.tickBounties();
         this.playerActivity.clear();
 
         this.previousIndexValue = this.lastIndexValue;

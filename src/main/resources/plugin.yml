@@ -29,6 +29,10 @@ commands:
     description: Obtenir des items speciaux du marche (boussole, graine speculative)
     usage: /marketitem <boussole|graine> [montant] [minutes]
     permission: marketeconomy.use
+  prime:
+    description: Place une prime sur un joueur repere pour manipulation de marche
+    usage: /prime <joueur>
+    permission: marketeconomy.use
   marketadmin:
     description: Commandes admin du marche (reset prix, ajout item)
     usage: /marketadmin <reset|additem|setprice> [args]

@@ -5,6 +5,7 @@ import com.antonin.marketeconomy.commands.BuyCommand;
 import com.antonin.marketeconomy.commands.FuturesCommand;
 import com.antonin.marketeconomy.commands.JournalCommand;
 import com.antonin.marketeconomy.commands.MarketCommand;
+import com.antonin.marketeconomy.commands.PrimeCommand;
 import com.antonin.marketeconomy.commands.SellCommand;
 import com.antonin.marketeconomy.commands.SpecialItemCommand;
 import com.antonin.marketeconomy.gui.MarketGUIListener;
@@ -38,6 +39,7 @@ extends JavaPlugin {
         this.getCommand("journal").setExecutor((CommandExecutor)new JournalCommand(this));
         this.getCommand("futures").setExecutor((CommandExecutor)new FuturesCommand(this));
         this.getCommand("marketitem").setExecutor((CommandExecutor)new SpecialItemCommand(this));
+        this.getCommand("prime").setExecutor((CommandExecutor)new PrimeCommand(this));
         Bukkit.getPluginManager().registerEvents((Listener)new MarketGUIListener(this), (Plugin)this);
         Bukkit.getPluginManager().registerEvents((Listener)new VillagerInteractionListener(this), (Plugin)this);
         Bukkit.getPluginManager().registerEvents((Listener)new FuturesRedeemListener(this), (Plugin)this);

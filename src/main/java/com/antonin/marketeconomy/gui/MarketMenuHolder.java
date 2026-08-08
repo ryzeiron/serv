@@ -11,21 +11,23 @@ public class MarketMenuHolder implements InventoryHolder {
     private final Map<Integer, MarketCategory> categoryBySlot;
     private final Map<Integer, Material> materialBySlot;
     private final int backButtonSlot;
+    private final int sellAllButtonSlot;
     private Inventory inventory;
 
     public static MarketMenuHolder mainMenu(Map<Integer, MarketCategory> categoryBySlot) {
-        return new MarketMenuHolder(null, categoryBySlot, null, -1);
+        return new MarketMenuHolder(null, categoryBySlot, null, -1, -1);
     }
 
-    public static MarketMenuHolder categoryMenu(MarketCategory category, Map<Integer, Material> materialBySlot, int backButtonSlot) {
-        return new MarketMenuHolder(category, null, materialBySlot, backButtonSlot);
+    public static MarketMenuHolder categoryMenu(MarketCategory category, Map<Integer, Material> materialBySlot, int backButtonSlot, int sellAllButtonSlot) {
+        return new MarketMenuHolder(category, null, materialBySlot, backButtonSlot, sellAllButtonSlot);
     }
 
-    private MarketMenuHolder(MarketCategory category, Map<Integer, MarketCategory> categoryBySlot, Map<Integer, Material> materialBySlot, int backButtonSlot) {
+    private MarketMenuHolder(MarketCategory category, Map<Integer, MarketCategory> categoryBySlot, Map<Integer, Material> materialBySlot, int backButtonSlot, int sellAllButtonSlot) {
         this.category = category;
         this.categoryBySlot = categoryBySlot;
         this.materialBySlot = materialBySlot;
         this.backButtonSlot = backButtonSlot;
+        this.sellAllButtonSlot = sellAllButtonSlot;
     }
 
     public boolean isMainMenu() {
@@ -47,6 +49,10 @@ public class MarketMenuHolder implements InventoryHolder {
 
     public boolean isBackButton(int slot) {
         return slot == this.backButtonSlot;
+    }
+
+    public boolean isSellAllButton(int slot) {
+        return slot == this.sellAllButtonSlot;
     }
 
     public void setInventory(Inventory inventory) {

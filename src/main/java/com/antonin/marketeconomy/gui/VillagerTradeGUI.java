@@ -26,6 +26,16 @@ public class VillagerTradeGUI {
 
     public static void open(Player player, Villager villager, MarketManager marketManager, ReputationManager reputationManager) {
         MarketCategory category = professionCategory(villager.getProfession());
+        build(player, category, villagerLabel(villager.getProfession()), marketManager, reputationManager);
+    }
+
+    // Rouvre le menu d'une categorie sans avoir besoin de l'entite villageois d'origine
+    // (utile apres une action comme "Tout vendre", le villageois a pu se deplacer entre temps)
+    public static void reopen(Player player, MarketCategory category, MarketManager marketManager, ReputationManager reputationManager) {
+        build(player, category, category.getDisplayName(), marketManager, reputationManager);
+    }
+
+    private static void build(Player player, MarketCategory category, String title, MarketManager marketManager, ReputationManager reputationManager) {
         List<MarketItem> tradable = new ArrayList<>();
         for (MarketItem item : marketManager.getItems().values()) {
             if (item.getCategory() == category) {
@@ -33,10 +43,14 @@ public class VillagerTradeGUI {
             }
         }
 
-        int size = Math.max(9, ((tradable.size() - 1) / 9 + 1) * 9);
+        int itemRows = Math.max(1, (tradable.size() + 8) / 9);
+        int totalRows = itemRows + 1;
+        int size = totalRows * 9;
+        int sellAllSlot = (totalRows - 1) * 9 + 4;
+
         Map<Integer, Material> materialBySlot = new HashMap<>();
-        VillagerTradeHolder holder = new VillagerTradeHolder(materialBySlot);
-        Inventory inv = Bukkit.createInventory(holder, size, "§8§l" + villagerLabel(villager.getProfession()));
+        VillagerTradeHolder holder = new VillagerTradeHolder(materialBySlot, category, sellAllSlot);
+        Inventory inv = Bukkit.createInventory(holder, size, "§8§l" + title);
         holder.setInventory(inv);
 
         UUID uuid = player.getUniqueId();
@@ -65,6 +79,18 @@ public class VillagerTradeGUI {
             materialBySlot.put(slot, item.getMaterial());
             slot++;
         }
+
+        ItemStack sellAll = new ItemStack(Material.GOLD_BLOCK);
+        ItemMeta sellAllMeta = sellAll.getItemMeta();
+        if (sellAllMeta != null) {
+            sellAllMeta.setDisplayName("§6§lTout vendre");
+            List<String> lore = new ArrayList<>();
+            lore.add("§7Vend tout ce que tu portes qui se");
+            lore.add("§7négocie avec ce marchand.");
+            sellAllMeta.setLore(lore);
+            sellAll.setItemMeta(sellAllMeta);
+        }
+        inv.setItem(sellAllSlot, sellAll);
 
         player.openInventory(inv);
     }

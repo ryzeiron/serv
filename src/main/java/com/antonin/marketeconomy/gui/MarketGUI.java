@@ -82,9 +82,10 @@ public class MarketGUI {
         int totalRows = rowsNeeded + 2;
         int size = totalRows * 9;
         int backSlot = (totalRows - 1) * 9 + 4;
+        int sellAllSlot = (totalRows - 1) * 9 + 2;
 
         Map<Integer, Material> materialBySlot = new HashMap<>();
-        MarketMenuHolder holder = MarketMenuHolder.categoryMenu(category, materialBySlot, backSlot);
+        MarketMenuHolder holder = MarketMenuHolder.categoryMenu(category, materialBySlot, backSlot, sellAllSlot);
         Inventory inv = Bukkit.createInventory(holder, size, "§8§lMarché §7- §e" + category.getDisplayName());
         holder.setInventory(inv);
 
@@ -117,6 +118,18 @@ public class MarketGUI {
             backButton.setItemMeta(backMeta);
         }
         inv.setItem(backSlot, backButton);
+
+        ItemStack sellAll = new ItemStack(Material.GOLD_BLOCK);
+        ItemMeta sellAllMeta = sellAll.getItemMeta();
+        if (sellAllMeta != null) {
+            sellAllMeta.setDisplayName("§6§lTout vendre");
+            List<String> lore = new ArrayList<>();
+            lore.add("§7Vend tout ce que tu portes qui se");
+            lore.add("§7négocie dans ce rayon.");
+            sellAllMeta.setLore(lore);
+            sellAll.setItemMeta(sellAllMeta);
+        }
+        inv.setItem(sellAllSlot, sellAll);
 
         return inv;
     }
