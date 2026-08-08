@@ -30,7 +30,7 @@ public class JobCommand implements CommandExecutor {
 
         JobType requested = JobType.fromString(args[0]);
         if (requested == null) {
-            player.sendMessage("§6[Métier] §eMétiers disponibles: §5hacker");
+            player.sendMessage("§6[Métier] §eMétiers disponibles: §5hacker§e, §6mineur");
             return true;
         }
         if (this.plugin.getJobManager().hasJob(player.getUniqueId(), requested)) {
@@ -38,7 +38,7 @@ public class JobCommand implements CommandExecutor {
             return true;
         }
         this.plugin.getJobManager().setJob(player.getUniqueId(), requested);
-        player.sendMessage("§6[Métier] §eTu es maintenant " + requested.getDisplayName() + "§e ! Tape §f/hack§e pour voir tes capacités.");
+        player.sendMessage("§6[Métier] §eTu es maintenant " + requested.getDisplayName() + "§e !");
         return true;
     }
 }

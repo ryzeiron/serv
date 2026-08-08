@@ -85,10 +85,20 @@ custom-items:
   # Chance qu'une prise a la peche soit remplacee par du Plastique
   plastic-chance: 0.002
 
-# Metiers (/metier) : progression par xp/niveau, un metier a la fois par joueur
+# Mines du metier Mineur : posees via /marketadmin spawnmine <1-4>, se regenerent
+# periodiquement (restaure tout le minerai/les tunnels mines)
+mines:
+  regen-minutes: 25
+
+# Metiers (/metier) : progression par xp/niveau (niveau max different par metier), un
+# metier a la fois par joueur
 jobs:
-  # Xp necessaire pour passer du niveau N au niveau N+1 = xp-per-level-base * N (niveau max 10)
+  # Xp necessaire pour passer du niveau N au niveau N+1 = xp-per-level-base * N
   xp-per-level-base: 100.0
+  # Mine 1 (niveau 1-5): charbon/fer/or -- Mine 2 (niveau 6-10): cuivre/lapis/redstone
+  # Mine 3 (niveau 11-20): diamant/quartz/emeraude + lithium -- Mine 4 (niveau 21-45): tout, mixe
+  mineur:
+    xp-per-ore-base: 8.0
   hacker:
     # /hack market <item> : rapport d'initie sur la pression de prix du cycle en cours
     insider-cooldown-seconds: 20

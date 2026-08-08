@@ -1,15 +1,13 @@
 package com.antonin.marketeconomy.model;
 
 public class PlayerJob {
-    public static final int MAX_LEVEL = 10;
-
     private final JobType type;
     private int level;
     private double xp;
 
     public PlayerJob(JobType type, int level, double xp) {
         this.type = type;
-        this.level = Math.max(1, Math.min(MAX_LEVEL, level));
+        this.level = Math.max(1, Math.min(type.getMaxLevel(), level));
         this.xp = xp;
     }
 
@@ -35,12 +33,13 @@ public class PlayerJob {
 
     // Ajoute de l'xp et monte de niveau si besoin ; renvoie le nombre de niveaux gagnes
     public int addXp(double amount, double xpPerLevelBase) {
-        if (this.level >= MAX_LEVEL) {
+        int maxLevel = this.type.getMaxLevel();
+        if (this.level >= maxLevel) {
             return 0;
         }
         this.xp += amount;
         int gained = 0;
-        while (this.level < MAX_LEVEL) {
+        while (this.level < maxLevel) {
             double needed = this.xpToNextLevel(xpPerLevelBase);
             if (this.xp < needed) {
                 break;
@@ -49,7 +48,7 @@ public class PlayerJob {
             this.level++;
             gained++;
         }
-        if (this.level >= MAX_LEVEL) {
+        if (this.level >= maxLevel) {
             this.xp = 0.0;
         }
         return gained;

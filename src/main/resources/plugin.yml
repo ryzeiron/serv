@@ -55,8 +55,8 @@ commands:
     usage: /setpvp
     permission: marketeconomy.admin
   marketadmin:
-    description: Commandes admin (suppression de zone/structure, argent)
-    usage: /marketadmin <clearzone <tailleX> <tailleY> <tailleZ> [confirm]|givemoney <joueur> <montant>>
+    description: Commandes admin (suppression de zone/structure, argent, mines)
+    usage: /marketadmin <clearzone <tailleX> <tailleY> <tailleZ> [confirm]|givemoney <joueur> <montant>|spawnmine <1-4>>
     permission: marketeconomy.admin
   metier:
     description: Choisis ou consulte ton metier

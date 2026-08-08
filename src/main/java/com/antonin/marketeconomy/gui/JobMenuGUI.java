@@ -20,6 +20,9 @@ public final class JobMenuGUI {
         if (type == JobType.HACKER) {
             return Material.SPYGLASS;
         }
+        if (type == JobType.MINEUR) {
+            return Material.DIAMOND_PICKAXE;
+        }
         return Material.PAPER;
     }
 
@@ -68,7 +71,7 @@ public final class JobMenuGUI {
         List<String> lore = new ArrayList<>();
         if (isCurrent) {
             int level = job.getLevel();
-            boolean maxed = level >= PlayerJob.MAX_LEVEL;
+            boolean maxed = level >= type.getMaxLevel();
             lore.add("§7Niveau: §f" + level + (maxed ? " §a(max)" : ""));
             if (!maxed) {
                 double xpNeeded = job.xpToNextLevel(xpPerLevelBase);
@@ -88,6 +91,14 @@ public final class JobMenuGUI {
             lore.add("§7- Piratage de banque d'île");
             lore.add("§7- Terminal (mini-jeu, loot)");
             lore.add("§7Effets plus forts à mesure que le niveau monte.");
+        }
+        if (type == JobType.MINEUR) {
+            lore.add("§6Paliers de mines :");
+            lore.add("§7- Niv. 1-5 : charbon, fer, or");
+            lore.add("§7- Niv. 6-10 : cuivre, lapis, redstone");
+            lore.add("§7- Niv. 11-20 : diamant, quartz, émeraude, lithium");
+            lore.add("§7- Niv. 21-45 : tous les minerais (probabilités variées)");
+            lore.add("§7Chaque mine se régénère toutes les 25 min.");
         }
         inventory.setItem(13, HackerComputerGUI.namedItem(iconFor(type), type.getDisplayName(), lore.toArray(new String[0])));
 

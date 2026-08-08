@@ -29,6 +29,7 @@ import com.antonin.marketeconomy.items.HackerComputerBlockListener;
 import com.antonin.marketeconomy.items.HackerComputerItem;
 import com.antonin.marketeconomy.items.LithiumMiningListener;
 import com.antonin.marketeconomy.items.MerchantCompassTracker;
+import com.antonin.marketeconomy.items.MineBlockListener;
 import com.antonin.marketeconomy.items.PlasticFishingListener;
 import com.antonin.marketeconomy.storage.EconomyHook;
 import org.bukkit.Bukkit;
@@ -52,6 +53,7 @@ extends JavaPlugin {
     private BankManager bankManager;
     private HudManager hudManager;
     private HackerAbilityService hackerAbilityService;
+    private MineManager mineManager;
 
     public void onEnable() {
         this.saveDefaultConfig();
@@ -67,6 +69,7 @@ extends JavaPlugin {
         this.bankManager = new BankManager(this);
         this.hudManager = new HudManager(this);
         this.hackerAbilityService = new HackerAbilityService(this);
+        this.mineManager = new MineManager(this);
 
         this.getCommand("market").setExecutor((CommandExecutor)new MarketCommand(this));
         this.getCommand("buy").setExecutor((CommandExecutor)new BuyCommand(this));
@@ -96,6 +99,7 @@ extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents((Listener)new JobMenuListener(this), (Plugin)this);
         Bukkit.getPluginManager().registerEvents((Listener)new LithiumMiningListener(this), (Plugin)this);
         Bukkit.getPluginManager().registerEvents((Listener)new PlasticFishingListener(this), (Plugin)this);
+        Bukkit.getPluginManager().registerEvents((Listener)new MineBlockListener(this), (Plugin)this);
 
         this.registerHackerComputerRecipe();
 
@@ -103,6 +107,8 @@ extends JavaPlugin {
         Bukkit.getScheduler().runTaskTimer((Plugin)this, () -> this.marketManager.recalculateAll(), intervalTicks, intervalTicks);
         Bukkit.getScheduler().runTaskTimer((Plugin)this, new MerchantCompassTracker(this), 40L, 40L);
         Bukkit.getScheduler().runTaskTimer((Plugin)this, () -> this.hudManager.refreshAll(), 40L, 40L);
+        long mineRegenTicks = this.getConfig().getLong("mines.regen-minutes", 25L) * 60L * 20L;
+        Bukkit.getScheduler().runTaskTimer((Plugin)this, () -> this.mineManager.regenerateAll(), mineRegenTicks, mineRegenTicks);
 
         this.getLogger().info("MarketEconomy active avec " + this.marketManager.getItems().size() + " items echangeables.");
     }
@@ -169,5 +175,9 @@ extends JavaPlugin {
 
     public HackerAbilityService getHackerAbilityService() {
         return this.hackerAbilityService;
+    }
+
+    public MineManager getMineManager() {
+        return this.mineManager;
     }
 }

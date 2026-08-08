@@ -26,11 +26,14 @@ public class MarketAdminCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage("§6[Marché] §eUsage: /marketadmin <clearzone|givemoney> ...");
+            sender.sendMessage("§6[Marché] §eUsage: /marketadmin <clearzone|givemoney|spawnmine> ...");
             return true;
         }
         if (args[0].equalsIgnoreCase("givemoney")) {
             return this.handleGiveMoney(sender, args);
+        }
+        if (args[0].equalsIgnoreCase("spawnmine")) {
+            return this.handleSpawnMine(sender, args);
         }
         if (!args[0].equalsIgnoreCase("clearzone")) {
             sender.sendMessage("§6[Marché] §eUsage: /marketadmin clearzone <tailleX> <tailleY> <tailleZ> [confirm]");
@@ -156,6 +159,32 @@ public class MarketAdminCommand implements CommandExecutor {
         if (online != null) {
             online.sendMessage("§6[Marché] §eTu as reçu " + this.plugin.getEconomyHook().format(amount) + " d'un admin.");
         }
+        return true;
+    }
+
+    private boolean handleSpawnMine(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("Cette commande est reservee aux joueurs.");
+            return true;
+        }
+        Player player = (Player) sender;
+        if (args.length < 2) {
+            player.sendMessage("§6[Marché] §eUsage: /marketadmin spawnmine <1-4>");
+            return true;
+        }
+        int tier;
+        try {
+            tier = Integer.parseInt(args[1]);
+        } catch (NumberFormatException e) {
+            player.sendMessage("§6[Marché] §cPalier invalide.");
+            return true;
+        }
+        String error = this.plugin.getMineManager().spawnMine(tier, player.getLocation().getBlock().getLocation());
+        if (error != null) {
+            player.sendMessage("§6[Marché] §c" + error);
+            return true;
+        }
+        player.sendMessage("§6[Marché] §aMine du palier " + tier + " posée (à partir de ta position, coin étendu vers +X/+Y/+Z).");
         return true;
     }
 }
