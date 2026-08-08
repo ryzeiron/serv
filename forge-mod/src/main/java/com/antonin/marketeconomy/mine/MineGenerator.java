@@ -92,8 +92,8 @@ public final class MineGenerator {
         }
         level.setBlock(origin.offset(PLATFORM_X0 + 1, DEPTH, PLATFORM_Z1 - 1), Blocks.OAK_SIGN.defaultBlockState(), SET_FLAGS);
         for (int x : new int[] {PLATFORM_X0, PLATFORM_X1}) {
-            level.setBlock(origin.offset(x, DEPTH, PLATFORM_Z0), Blocks.CHAIN.defaultBlockState(), SET_FLAGS);
-            level.setBlock(origin.offset(x, DEPTH + 1, PLATFORM_Z0), Blocks.CHAIN.defaultBlockState(), SET_FLAGS);
+            level.setBlock(origin.offset(x, DEPTH, PLATFORM_Z0), Blocks.IRON_CHAIN.defaultBlockState(), SET_FLAGS);
+            level.setBlock(origin.offset(x, DEPTH + 1, PLATFORM_Z0), Blocks.IRON_CHAIN.defaultBlockState(), SET_FLAGS);
         }
     }
 
