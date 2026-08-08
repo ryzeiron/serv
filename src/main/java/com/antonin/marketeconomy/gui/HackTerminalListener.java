@@ -91,7 +91,7 @@ public class HackTerminalListener implements Listener {
     }
 
     private void closeSoon(Player player) {
-        Bukkit.getScheduler().runTaskLater((Plugin) this.plugin, player::closeInventory, 40L);
+        Bukkit.getScheduler().runTaskLater((Plugin) this.plugin, (Runnable) () -> player.closeInventory(), 40L);
     }
 
     private static int indexOf(int slot) {
