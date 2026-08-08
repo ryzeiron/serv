@@ -30,6 +30,7 @@ import com.antonin.marketeconomy.items.HackerComputerItem;
 import com.antonin.marketeconomy.items.LithiumMiningListener;
 import com.antonin.marketeconomy.items.MerchantCompassTracker;
 import com.antonin.marketeconomy.items.MineBlockListener;
+import com.antonin.marketeconomy.items.MineTeleportListener;
 import com.antonin.marketeconomy.items.PlasticFishingListener;
 import com.antonin.marketeconomy.storage.EconomyHook;
 import org.bukkit.Bukkit;
@@ -100,6 +101,7 @@ extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents((Listener)new LithiumMiningListener(this), (Plugin)this);
         Bukkit.getPluginManager().registerEvents((Listener)new PlasticFishingListener(this), (Plugin)this);
         Bukkit.getPluginManager().registerEvents((Listener)new MineBlockListener(this), (Plugin)this);
+        Bukkit.getPluginManager().registerEvents((Listener)new MineTeleportListener(this), (Plugin)this);
 
         this.registerHackerComputerRecipe();
 

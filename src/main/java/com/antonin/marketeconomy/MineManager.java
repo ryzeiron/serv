@@ -13,6 +13,7 @@ import org.bukkit.block.structure.Mirror;
 import org.bukkit.block.structure.StructureRotation;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.structure.Structure;
 import org.bukkit.structure.StructureManager;
 import org.bukkit.util.Vector;
@@ -23,6 +24,12 @@ import org.bukkit.util.Vector;
 public class MineManager {
     public static final int MIN_TIER = 1;
     public static final int MAX_TIER = 4;
+
+    // Position locale (dans la structure) des 4 plaques de teleportation et de leur profondeur de
+    // reference — doit rester synchronise avec structures/build_mines.py (PLATE_LOCAL_X/Z, DEPTH)
+    public static final int[] PLATE_LOCAL_X = {47, 49, 51, 53};
+    public static final int PLATE_LOCAL_Z = 2;
+    public static final int MINE_DEPTH = 20;
 
     public static class MineInstance {
         final int tier;
@@ -99,10 +106,80 @@ public class MineManager {
                     size.getBlockX(), size.getBlockY(), size.getBlockZ());
             this.mines.add(instance);
             this.save();
+            this.spawnTeleporterTags(instance);
             return null;
         } catch (IOException e) {
             return "Erreur de chargement: " + e.getMessage();
         }
+    }
+
+    // Affiche les 4 etiquettes "Mine n°X" au-dessus des plaques de teleportation de la mine
+    // qu'on vient de poser (les plaques elles-memes sont deja dans la structure)
+    private void spawnTeleporterTags(MineInstance instance) {
+        World world = Bukkit.getWorld(instance.world);
+        if (world == null) {
+            return;
+        }
+        for (int i = 0; i < PLATE_LOCAL_X.length; i++) {
+            int targetTier = i + 1;
+            Location tagLoc = new Location(world,
+                    instance.x0 + PLATE_LOCAL_X[i] + 0.5,
+                    instance.y0 + MINE_DEPTH + 1.3,
+                    instance.z0 + PLATE_LOCAL_Z + 0.5);
+            world.spawn(tagLoc, ArmorStand.class, stand -> {
+                stand.setVisible(false);
+                stand.setMarker(true);
+                stand.setGravity(false);
+                stand.setSmall(true);
+                stand.setBasePlate(false);
+                stand.setInvulnerable(true);
+                stand.setCustomName("§eMine n°" + targetTier);
+                stand.setCustomNameVisible(true);
+            });
+        }
+    }
+
+    // Renvoie le palier cible si "clicked" correspond a une plaque de teleportation d'une mine
+    // enregistree, sinon null
+    public Integer getTeleportTarget(Location clicked) {
+        if (clicked.getWorld() == null) {
+            return null;
+        }
+        for (MineInstance instance : this.mines) {
+            if (!clicked.getWorld().getName().equals(instance.world)) {
+                continue;
+            }
+            int py = instance.y0 + MINE_DEPTH;
+            int pz = instance.z0 + PLATE_LOCAL_Z;
+            if (clicked.getBlockY() != py || clicked.getBlockZ() != pz) {
+                continue;
+            }
+            for (int i = 0; i < PLATE_LOCAL_X.length; i++) {
+                if (clicked.getBlockX() == instance.x0 + PLATE_LOCAL_X[i]) {
+                    return i + 1;
+                }
+            }
+        }
+        return null;
+    }
+
+    // Point d'arrivee (sur la plateforme d'entree) de la mine du palier donne, ou null si elle
+    // n'a pas encore ete posee
+    public Location getEntryLocation(int tier) {
+        for (MineInstance instance : this.mines) {
+            if (instance.tier != tier) {
+                continue;
+            }
+            World world = Bukkit.getWorld(instance.world);
+            if (world == null) {
+                continue;
+            }
+            return new Location(world,
+                    instance.x0 + PLATE_LOCAL_X[PLATE_LOCAL_X.length / 2] + 0.5,
+                    instance.y0 + MINE_DEPTH + 1,
+                    instance.z0 + PLATE_LOCAL_Z + 0.5);
+        }
+        return null;
     }
 
     // Reapplique chaque mine enregistree a son emplacement d'origine : restaure tout le
