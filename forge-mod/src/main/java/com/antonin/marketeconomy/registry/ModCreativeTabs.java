@@ -20,6 +20,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.LITHIUM_INGOT.get());
                         output.accept(ModItems.PLASTIC.get());
                         output.accept(ModItems.ORDINATEUR.get());
+                        output.accept(ModItems.LITHIUM_ORE.get());
                     })
                     .build());
 

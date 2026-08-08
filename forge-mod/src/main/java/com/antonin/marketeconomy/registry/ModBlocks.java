@@ -20,6 +20,15 @@ public class ModBlocks {
                     .sound(SoundType.METAL)
                     .noOcclusion()));
 
+    // Vrai minerai du mod (remplace le calcite reskinne du plugin Paper) : genere dans les mines
+    // du metier Mineur, donne un Lingot de Lithium via sa table de butin
+    public static final RegistryObject<Block> LITHIUM_ORE = BLOCKS.register("lithium_ore",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 3.0f)
+                    .sound(SoundType.DEEPSLATE)));
+
     private ModBlocks() {
     }
 }

@@ -20,6 +20,9 @@ public class ModItems {
     public static final RegistryObject<Item> ORDINATEUR = ITEMS.register("ordinateur",
             () -> new BlockItem(ModBlocks.ORDINATEUR.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> LITHIUM_ORE = ITEMS.register("lithium_ore",
+            () -> new BlockItem(ModBlocks.LITHIUM_ORE.get(), new Item.Properties()));
+
     private ModItems() {
     }
 }

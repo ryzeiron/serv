@@ -44,22 +44,43 @@ manipulation/primes/ecoutes laissee de cote en phase 2 — elles reviennent ici)
 - Le bloc Ordinateur ouvre maintenant un "terminal" au clic droit : les capacites Hacker
   s'affichent en liens cliquables (pré-remplissent la commande dans le chat).
 
-Pas encore porte : le mini-jeu de `/hack terminal` (grille de piratage contre du loot,
-necessite un vrai GUI graphique), les contrats a terme, le journal boursier, le metier
-Mineur (mines a paliers, xp par minerai — la prochaine phase logique), le menu GUI du
-marche.
+Phase 4 : le metier Mineur et ses mines. Contrairement au plugin Paper (qui reskinnait
+du calcite en "minerai de lithium" et bundlait 4 fichiers de structure .nbt generes par
+un script Python), le mod a un vrai bloc `marketeconomy:lithium_ore` et genere les mines
+directement en Java (`Level#setBlock` en boucle) plutot que de placer une structure NBT
+statique :
 
-Deux points d'API Forge 1.21 recents utilises ici sans pouvoir etre compiles/verifies
-dans ce sandbox (a checker en premier en cas d'erreur de compilation) :
+- `marketeconomy:lithium_ore` — vrai minerai (texture roche + eclats violets), donne un
+  Lingot de Lithium via sa table de butin.
+- `MineGenerator` — porte fidelement `structures/build_mines.py` (memes tables de
+  minerai/densites/graines par palier, memes filons de lithium, meme plateforme d'entree,
+  muret et torches) en generation procedurale directe.
+- `MineManager` — genere/enregistre les mines (persistees en JSON), regeneration toutes
+  les 25 min (comme `mines.regen-minutes` dans l'ancien config.yml), reseau de
+  teleportation entre paliers (etiquettes "Mine n°X" flottantes via ArmorStand,
+  detection de plaque de pression via le tick joueur faute d'evenement Forge dedie).
+- `MineEvents` — meme gating que le plugin Paper (il faut être Mineur au niveau minimum
+  du palier pour casser un minerai) et meme xp par minerai casse.
+- `/mine spawn <1-4>` (permission niveau 2, comme `/gamemode`) genere une mine à la
+  position du joueur.
+
+Pas encore porte : le mini-jeu de `/hack terminal` (grille de piratage contre du loot,
+necessite un vrai GUI graphique), les contrats a terme, le journal boursier, le menu GUI
+du marche.
+
+Points d'API Forge 1.21 recents utilises ici sans pouvoir etre compiles/verifies dans ce
+sandbox (a checker en premier en cas d'erreur de compilation) :
 - `OrdinateurBlock#useWithoutItem` (le clic droit sans item special sur un bloc a ete
   scinde de `use()` vers `useWithoutItem`/`useItemOn` autour de la 1.20.5).
-- `TickEvent.ServerTickEvent` dans `ServerEvents` (event de tick historique de Forge,
-  verifier qu'il n'a pas ete remplace par un `ServerTickEvent.Post` dans le Forge exact
-  utilise).
+- `TickEvent.ServerTickEvent` / `TickEvent.PlayerTickEvent` dans `ServerEvents` et
+  `MineEvents` (events de tick historiques de Forge, verifier qu'ils n'ont pas ete
+  remplaces par des variantes `.Pre`/`.Post` dans le Forge exact utilise).
+- `BlockEvent.BreakEvent` importe depuis `net.minecraftforge.event.level` (le package a
+  ete renomme depuis `net.minecraftforge.event.world` a un moment de la 1.20.x).
 
-Tout le reste du plugin Paper (mines du Mineur, GUIs graphiques, HUD, structures de
-spawn/iles/PvP, reputation, PNJ marchands, contrats a terme, journal...) reste a
-reecrire dans ce mod — c'est un gros chantier qui sera fait par etapes.
+Tout le reste du plugin Paper (GUIs graphiques, HUD, structures de spawn/iles/PvP,
+reputation, PNJ marchands, contrats a terme, journal...) reste a reecrire dans ce mod —
+c'est un gros chantier qui sera fait par etapes.
 
 ## Build
 

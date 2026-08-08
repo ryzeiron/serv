@@ -121,9 +121,36 @@ def build_ordinateur_screen():
     img.save(f"{BLOCK_DIR}/ordinateur_screen.png")
 
 
+def build_lithium_ore():
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 255))
+    d = ImageDraw.Draw(img)
+    rock_dark = (58, 60, 66, 255)
+    rock = (72, 74, 81, 255)
+    rock_light = (90, 93, 100, 255)
+    crystal = (196, 180, 224, 255)
+    crystal_light = (222, 210, 238, 255)
+    crystal_glow = (150, 130, 190, 255)
+
+    for y in range(S):
+        for x in range(S):
+            h = (x * 928371 + y * 128371) % 100
+            c = rock_dark if h < 35 else rock if h < 75 else rock_light
+            d.point([(x, y)], fill=c)
+
+    clusters = [(3, 3), (11, 2), (2, 11), (12, 10), (7, 7)]
+    for cx, cy in clusters:
+        d.point([(cx, cy)], fill=crystal_light)
+        for dx, dz in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            d.point([(cx + dx, cy + dz)], fill=crystal)
+        for dx, dz in [(-1, -1), (1, 1)]:
+            d.point([(cx + dx, cy + dz)], fill=crystal_glow)
+    img.save(f"{BLOCK_DIR}/lithium_ore.png")
+
+
 build_lithium_ingot()
 build_plastic()
 build_ordinateur_case()
 build_ordinateur_base()
 build_ordinateur_screen()
+build_lithium_ore()
 print("textures generees")
