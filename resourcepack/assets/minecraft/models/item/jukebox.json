@@ -1,0 +1,6 @@
+{
+  "parent": "block/jukebox",
+  "overrides": [
+    { "predicate": { "custom_model_data": 5003 }, "model": "item/computer" }
+  ]
+}

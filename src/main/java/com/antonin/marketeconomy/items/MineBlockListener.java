@@ -12,8 +12,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 
 // Controle le minage dans les mines par palier : il faut etre Mineur et avoir le niveau minimum
-// du palier pour casser un bloc de minerai ; le "minerai de lithium" (amethyst_cluster) donne un
-// Lingot de Lithium garanti au lieu de son drop vanilla
+// du palier pour casser un bloc de minerai ; le "minerai de lithium" (calcite, reskinne par le
+// resource pack) donne un Lingot de Lithium garanti au lieu de son drop vanilla
 public class MineBlockListener implements Listener {
     private final MarketEconomyPlugin plugin;
 
@@ -30,7 +30,7 @@ public class MineBlockListener implements Listener {
         }
 
         Material type = event.getBlock().getType();
-        boolean isLithiumMarker = type == Material.AMETHYST_CLUSTER;
+        boolean isLithiumMarker = type == Material.CALCITE;
         boolean isOre = type.name().endsWith("_ORE");
         if (!isOre && !isLithiumMarker) {
             return;

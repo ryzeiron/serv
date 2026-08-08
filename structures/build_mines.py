@@ -15,7 +15,8 @@ Palier 2 (niveau 6-10) : cuivre, lapis, redstone
 Palier 3 (niveau 11-20): diamant, quartz, emeraude + minerai de lithium
 Palier 4 (niveau 21-45): tous les minerais, probabilites variees + lithium
 
-Le "minerai de lithium" est un amas d'amethyste (minecraft:amethyst_cluster) ;
+Le "minerai de lithium" est un bloc de calcite (minecraft:calcite) reskinne par le
+resource pack (cube simple, sans risque de deformation du modele) ;
 un listener cote plugin le detecte et donne un Lingot de Lithium garanti.
 """
 import random
@@ -89,7 +90,7 @@ def build_mine(seed, ore_table, ore_density, lithium_count, out_path):
                     set_block(x, y, z, stone_at(x, y, z))
                     continue
                 if (x, y, z) in lithium_spots:
-                    set_block(x, y, z, "minecraft:amethyst_cluster")
+                    set_block(x, y, z, "minecraft:calcite")
                 elif rng.random() < ore_density:
                     ore = rng.choices([o for o, _ in ore_table], weights=[wgt for _, wgt in ore_table])[0]
                     set_block(x, y, z, ore)

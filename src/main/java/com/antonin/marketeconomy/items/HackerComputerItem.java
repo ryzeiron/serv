@@ -8,10 +8,12 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 
-// L'Ordinateur : bloc posable (reskin de lutrin, qui a un bloc-entite exploitable via PDC) qui
-// donne acces a toutes les capacites du metier Hacker en clic droit une fois pose
+// L'Ordinateur : bloc posable (reskin de jukebox, qui a un bloc-entite exploitable via PDC et
+// une forme de cube simple, ideale pour un reskin de texture propre) qui donne acces a toutes
+// les capacites du metier Hacker en clic droit une fois pose
 public class HackerComputerItem {
-    public static final Material BASE_MATERIAL = Material.LECTERN;
+    public static final Material BASE_MATERIAL = Material.JUKEBOX;
+    public static final int CUSTOM_MODEL_DATA = 5003;
 
     private HackerComputerItem() {
     }
@@ -30,6 +32,7 @@ public class HackerComputerItem {
                     "§7du métier Hacker.",
                     "§eClic droit §7une fois posé pour l'ouvrir."
             ));
+            meta.setCustomModelData(CUSTOM_MODEL_DATA);
             meta.getPersistentDataContainer().set(key(plugin), PersistentDataType.BYTE, (byte) 1);
             stack.setItemMeta(meta);
         }
