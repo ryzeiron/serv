@@ -12,16 +12,16 @@ public class ModItems {
             DeferredRegister.create(ForgeRegistries.ITEMS, MarketEconomyMod.MOD_ID);
 
     public static final RegistryObject<Item> LITHIUM_INGOT = ITEMS.register("lithium_ingot",
-            () -> new Item(new Item.Properties()));
+            () -> new Item(new Item.Properties().setId(ITEMS.key("lithium_ingot"))));
 
     public static final RegistryObject<Item> PLASTIC = ITEMS.register("plastic",
-            () -> new Item(new Item.Properties()));
+            () -> new Item(new Item.Properties().setId(ITEMS.key("plastic"))));
 
     public static final RegistryObject<Item> ORDINATEUR = ITEMS.register("ordinateur",
-            () -> new BlockItem(ModBlocks.ORDINATEUR.get(), new Item.Properties()));
+            () -> new BlockItem(ModBlocks.ORDINATEUR.get(), new Item.Properties().setId(ITEMS.key("ordinateur"))));
 
     public static final RegistryObject<Item> LITHIUM_ORE = ITEMS.register("lithium_ore",
-            () -> new BlockItem(ModBlocks.LITHIUM_ORE.get(), new Item.Properties()));
+            () -> new BlockItem(ModBlocks.LITHIUM_ORE.get(), new Item.Properties().setId(ITEMS.key("lithium_ore"))));
 
     private ModItems() {
     }

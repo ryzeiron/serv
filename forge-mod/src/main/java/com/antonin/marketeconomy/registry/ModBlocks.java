@@ -15,6 +15,7 @@ public class ModBlocks {
 
     public static final RegistryObject<OrdinateurBlock> ORDINATEUR = BLOCKS.register("ordinateur",
             () -> new OrdinateurBlock(BlockBehaviour.Properties.of()
+                    .setId(BLOCKS.key("ordinateur"))
                     .mapColor(MapColor.METAL)
                     .strength(3.0f, 6.0f)
                     .sound(SoundType.METAL)
@@ -24,6 +25,7 @@ public class ModBlocks {
     // du metier Mineur, donne un Lingot de Lithium via sa table de butin
     public static final RegistryObject<Block> LITHIUM_ORE = BLOCKS.register("lithium_ore",
             () -> new Block(BlockBehaviour.Properties.of()
+                    .setId(BLOCKS.key("lithium_ore"))
                     .mapColor(MapColor.STONE)
                     .requiresCorrectToolForDrops()
                     .strength(3.0f, 3.0f)
