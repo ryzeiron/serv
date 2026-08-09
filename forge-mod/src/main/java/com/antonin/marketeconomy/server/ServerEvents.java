@@ -1,5 +1,6 @@
 package com.antonin.marketeconomy.server;
 
+import com.antonin.marketeconomy.command.FlyCommand;
 import com.antonin.marketeconomy.command.FuturesCommands;
 import com.antonin.marketeconomy.command.HackCommands;
 import com.antonin.marketeconomy.command.HudCommand;
@@ -10,8 +11,13 @@ import com.antonin.marketeconomy.command.MineCommands;
 import com.antonin.marketeconomy.command.ModCommands;
 import com.antonin.marketeconomy.command.SpecialItemCommand;
 import com.antonin.marketeconomy.command.WarpCommands;
+import com.antonin.marketeconomy.island.IslandManager;
 import com.antonin.marketeconomy.items.MerchantCompassTracker;
+import java.util.Set;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Relative;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -55,6 +61,7 @@ public final class ServerEvents {
         HudCommand.register(event.getDispatcher());
         SpecialItemCommand.register(event.getDispatcher());
         MarketAdminCommand.register(event.getDispatcher());
+        FlyCommand.register(event.getDispatcher());
     }
 
     @SubscribeEvent
@@ -62,7 +69,19 @@ public final class ServerEvents {
         if (MarketEconomyServer.get() == null || !(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
-        MarketEconomyServer.get().getReputationManager().refreshTitle(ServerLifecycleHooks.getCurrentServer(), player);
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MarketEconomyServer.get().getReputationManager().refreshTitle(server, player);
+        teleportToIsland(server, player);
+    }
+
+    // Skyblock : envoie chaque joueur sur son ile de depart a la connexion (la creant si besoin)
+    // plutot que de le laisser au spawn vanilla, qui n'a plus de sens dans un monde vide.
+    private static void teleportToIsland(MinecraftServer server, ServerPlayer player) {
+        ServerLevel overworld = server.overworld();
+        IslandManager islands = MarketEconomyServer.get().getIslandManager();
+        IslandManager.IslandSpawn island = islands.getOrCreateIsland(player, overworld);
+        var pos = island.position();
+        player.teleportTo(overworld, pos.x, pos.y, pos.z, Set.of(), player.getYRot(), player.getXRot(), true);
     }
 
     @SubscribeEvent
