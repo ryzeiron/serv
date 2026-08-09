@@ -6,9 +6,9 @@
     "III"
   ],
   "key": {
-    "P": { "item": "marketeconomy:plastic" },
-    "L": { "item": "marketeconomy:lithium_ingot" },
-    "I": { "item": "minecraft:iron_block" }
+    "P": "marketeconomy:plastic",
+    "L": "marketeconomy:lithium_ingot",
+    "I": "minecraft:iron_block"
   },
   "result": {
     "id": "marketeconomy:ordinateur",
